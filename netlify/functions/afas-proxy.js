@@ -31,32 +31,40 @@ exports.handler = async (event, context) => {
     }
 
     try {
-        // 2. Construct the AFAS API URL
+        // Construct the AFAS API URL
         const params = new URLSearchParams();
         
-        // Add parameters only if they are provided and not empty
+        // Add connector as part of URL path, not as parameter
+        const connectorPath = connector.replace(/^\//, '').replace(/\/$/, '');
+        
+        // Add other parameters
         if (skip) params.append('skip', skip);
         if (take) params.append('take', take);
         if (filterfieldids && filtervalues) {
             params.append('filterfieldids', filterfieldids);
             params.append('filtervalues', filtervalues);
-            // Only add operatortypes if we have filter fields
             if (operatortypes) {
                 params.append('operatortypes', operatortypes);
             }
         }
 
-        // Ensure baseUri doesn't end with a slash and connector doesn't start with one
+        // Ensure baseUri doesn't end with a slash
         const cleanBaseUri = baseUri.replace(/\/$/, '');
-        const cleanConnector = connector.replace(/^\//, '');
-        const targetUrl = `${cleanBaseUri}/${cleanConnector}${params.toString() ? '?' + params.toString() : ''}`;
+        
+        // Construct final URL with ProfitRestServices path
+        const targetUrl = `${cleanBaseUri}/ProfitRestServices/connectors/${connectorPath}${params.toString() ? '?' + params.toString() : ''}`;
 
-        console.log('AFAS API Request:', {
-            url: targetUrl,
-            method: 'GET',
+        console.log('AFAS API Request Details:', {
+            baseUri: cleanBaseUri,
+            connector: connectorPath,
+            parameters: Object.fromEntries(params.entries()),
+            finalUrl: targetUrl.replace(afasToken, '[hidden]'),
             headers: {
                 'Authorization': 'AfasToken [hidden]',
-                'Accept': 'application/json'
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'X-Client': 'Netlify Function',
+                'User-Agent': 'Netlify Function/1.0'
             }
         });
 
@@ -66,6 +74,9 @@ exports.handler = async (event, context) => {
             headers: {
                 'Authorization': `AfasToken ${afasToken}`,
                 'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'X-Client': 'Netlify Function',
+                'User-Agent': 'Netlify Function/1.0'
             },
         });
 
