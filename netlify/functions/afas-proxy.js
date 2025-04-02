@@ -55,8 +55,9 @@ exports.handler = async (event, context) => {
         const connectorPath = connector.replace(/^\/+/, '').replace(/\/+$/, '');
         
         // Add other parameters
-        if (skip) params.append('skip', skip);
-        if (take) params.append('take', take);
+        params.append('skip', skip || '0'); // Default to 0 if not provided
+        params.append('take', take || '100'); // Default to 100 if not provided
+        
         if (filterfieldids && filtervalues) {
             params.append('filterfieldids', filterfieldids);
             params.append('filtervalues', filtervalues);
