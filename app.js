@@ -23,10 +23,13 @@ class App {
             this.showSidebarLoading();
             this.showMainContentLoading(); // Show loading in main area initially
 
-            // Fetch sidebar data first
-            this.sidebarData = await this.afasApi.fetchProjectsForSidebar();
-            this.groupedSidebarData = this.groupProjectsByLeader(this.sidebarData);
-            this.renderSidebar();
+            // // Fetch sidebar data first - OLD WAY
+            // this.sidebarData = await this.afasApi.fetchProjectsForSidebar();
+            // this.groupedSidebarData = this.groupProjectsByLeader(this.sidebarData);
+            // this.renderSidebar();
+            
+            // Call the local test function instead
+            await this.fetchSidebarProjects();
 
             // Initially, don't load any specific project data
             this.showSelectProjectMessage(); 
