@@ -6,11 +6,23 @@ exports.handler = async (event, context) => {
     const afasToken = process.env.AFAS_TOKEN;
     const baseUri = process.env.AFAS_BASE_URL;
 
+    console.log('Environment check:', {
+        hasToken: !!afasToken,
+        hasBaseUri: !!baseUri,
+        baseUri: baseUri ? baseUri.replace(/token/gi, '[hidden]') : undefined
+    });
+
     // Basic validation
     if (!afasToken || !baseUri) {
         return {
             statusCode: 500,
-            body: JSON.stringify({ error: 'Server configuration error: Missing AFAS Token or Base URL.' }),
+            body: JSON.stringify({ 
+                error: 'Server configuration error: Missing AFAS Token or Base URL.',
+                details: {
+                    hasToken: !!afasToken,
+                    hasBaseUri: !!baseUri
+                }
+            }),
             headers: { 
                 'Content-Type': 'application/json',
                 'Access-Control-Allow-Origin': '*',
@@ -55,10 +67,10 @@ exports.handler = async (event, context) => {
         const targetUrl = `${cleanBaseUri}/${connectorPath}${params.toString() ? '?' + params.toString() : ''}`;
 
         console.log('AFAS API Request Details:', {
-            baseUri: cleanBaseUri,
+            baseUri: cleanBaseUri.replace(/token/gi, '[hidden]'),
             connector: connectorPath,
             parameters: Object.fromEntries(params.entries()),
-            finalUrl: targetUrl.replace(afasToken, '[hidden]'),
+            finalUrl: targetUrl.replace(/token/gi, '[hidden]'),
             headers: {
                 'Authorization': 'AfasToken [hidden]',
                 'Accept': 'application/json',
@@ -93,15 +105,20 @@ exports.handler = async (event, context) => {
 
         // If response is not ok, return detailed error
         if (!response.ok) {
+            const errorResponse = {
+                error: 'Error from AFAS API',
+                details: text,
+                status: response.status,
+                statusText: response.statusText,
+                url: targetUrl.replace(/token/gi, '[hidden]'),
+                headers: Object.fromEntries(response.headers.entries())
+            };
+            
+            console.error('AFAS API Error:', errorResponse);
+            
             return {
                 statusCode: response.status,
-                body: JSON.stringify({
-                    error: 'Error from AFAS API',
-                    details: text,
-                    status: response.status,
-                    statusText: response.statusText,
-                    url: targetUrl.replace(afasToken, '[hidden]') // Log URL but hide token
-                }),
+                body: JSON.stringify(errorResponse),
                 headers: { 
                     'Content-Type': 'application/json',
                     'Access-Control-Allow-Origin': '*',
@@ -118,6 +135,12 @@ exports.handler = async (event, context) => {
             if (!data) {
                 throw new Error('Empty response from AFAS API');
             }
+
+            console.log('Successfully parsed response:', {
+                hasRows: Array.isArray(data.rows),
+                rowCount: Array.isArray(data.rows) ? data.rows.length : 0
+            });
+
         } catch (parseError) {
             console.error('JSON Parse Error:', {
                 error: parseError.message,
@@ -130,7 +153,7 @@ exports.handler = async (event, context) => {
                     error: 'Invalid JSON response from AFAS API', 
                     details: parseError.message,
                     rawResponse: text,
-                    url: targetUrl.replace(afasToken, '[hidden]') // Log URL but hide token
+                    url: targetUrl.replace(/token/gi, '[hidden]')
                 }),
                 headers: { 
                     'Content-Type': 'application/json',
@@ -152,12 +175,18 @@ exports.handler = async (event, context) => {
         };
 
     } catch (error) {
-        console.error('Error in proxy function:', error);
+        console.error('Error in proxy function:', {
+            error: error.message,
+            stack: error.stack,
+            type: error.constructor.name
+        });
+        
         return {
             statusCode: 500,
             body: JSON.stringify({ 
                 error: 'Internal Server Error in proxy function.',
                 details: error.message,
+                type: error.constructor.name,
                 stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
             }),
             headers: { 
