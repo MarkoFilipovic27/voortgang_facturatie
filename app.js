@@ -190,6 +190,7 @@ class App {
     // --- Main Content Logic ---
     async selectProject(projectCode) {
         console.log(`Selecting project: ${projectCode}`);
+        const previousProjectCode = this.selectedProjectCode;
         this.selectedProjectCode = projectCode;
         
         // Find and store the leader name for navigation
@@ -202,7 +203,21 @@ class App {
         }
         console.log(`Selected leader: ${this.selectedLeaderName}`);
 
-        this.renderSidebar(); // Re-render sidebar to highlight selection
+        // In plaats van de hele sidebar opnieuw te renderen, werk alleen de geselecteerde items bij
+        if (previousProjectCode) {
+            // Verwijder de selectie van het vorige project
+            const prevProjectItems = this.sidebarContainer.querySelectorAll(`li[data-project-code="${previousProjectCode}"]`);
+            prevProjectItems.forEach(item => {
+                item.classList.remove('bg-blue-100', 'font-medium', 'text-blue-700');
+            });
+        }
+        
+        // Voeg selectie toe aan het nieuwe project
+        const newProjectItems = this.sidebarContainer.querySelectorAll(`li[data-project-code="${projectCode}"]`);
+        newProjectItems.forEach(item => {
+            item.classList.add('bg-blue-100', 'font-medium', 'text-blue-700');
+        });
+
         try {
             this.showMainContentLoading();
             const projectDataArray = await this.projectService.fetchProjectData(projectCode);
@@ -314,7 +329,6 @@ class App {
                         </div>
                         <div class="space-y-4">
                             <div class="mb-6">
-                                <h4 class="text-lg font-semibold mb-2 text-slate-700">Kostensoorten</h4>
                                 <div id="cumulative-costs">
                                     ${this.renderCumulativeCostBars(project.cumulativeCosts)}
                                 </div>
@@ -409,12 +423,13 @@ class App {
 
         let html = `
             <div class="flex items-center mb-4">
-                 <span class="w-48 pr-2 text-sm font-semibold text-slate-600">Totaal Kosten</span>
+                 <span class="w-48 pr-2 text-sm font-semibold text-slate-600">Totaal</span>
                  <div class="flex-1 mx-4">
                      <div class="w-full bg-slate-200 rounded-full h-4 relative">
-                        <div class="progress-bar-inner bg-purple-600 hover:bg-purple-700 h-4 rounded-full text-white flex items-center justify-start pl-2 text-xs" style="width: ${totalProgress}%;">
-                           ${totalActual > 0 ? '€' + totalActual.toLocaleString() : ''} 
+                        <div class="progress-bar-inner bg-purple-600 hover:bg-purple-700 h-4 rounded-full flex items-center ${totalProgress < 30 ? 'justify-end pr-1' : 'justify-start pl-2'} text-xs" style="width: ${totalProgress}%;">
+                           ${totalProgress < 30 ? '' : (totalActual > 0 ? '€' + totalActual.toLocaleString() : '')}
                          </div>
+                         ${totalProgress < 30 && totalActual > 0 ? `<span class="absolute left-2 top-0 bottom-0 flex items-center text-xs text-slate-700">€${totalActual.toLocaleString()}</span>` : ''}
                     </div>
                 </div>
                 <span class="w-20 text-sm text-right text-slate-500">
@@ -434,9 +449,10 @@ class App {
                     <span class="w-48 pr-2 text-sm text-slate-600 truncate" title="${labelText}">${labelText}</span>
                     <div class="flex-1 mx-4">
                          <div class="w-full bg-slate-200 rounded-full h-4 relative">
-                            <div class="progress-bar-inner bg-purple-600 hover:bg-purple-700 h-4 rounded-full text-white flex items-center justify-start pl-2 text-xs" style="width: ${progressPercent}%;">
-                               ${actual > 0 ? '€' + actual.toLocaleString() : ''} 
+                            <div class="progress-bar-inner bg-purple-600 hover:bg-purple-700 h-4 rounded-full flex items-center ${progressPercent < 30 ? 'justify-end pr-1' : 'justify-start pl-2'} text-xs" style="width: ${progressPercent}%;">
+                               ${progressPercent < 30 ? '' : (actual > 0 ? '€' + actual.toLocaleString() : '')}
                              </div>
+                             ${progressPercent < 30 && actual > 0 ? `<span class="absolute left-2 top-0 bottom-0 flex items-center text-xs text-slate-700">€${actual.toLocaleString()}</span>` : ''}
                         </div>
                     </div>
                      <span class="w-20 text-sm text-right text-slate-500">
@@ -789,6 +805,13 @@ class App {
                 notification.parentNode.removeChild(notification);
             }
         }, 300);
+    }
+
+    // Deze functie wordt aangeroepen wanneer een gebruiker een projectleider sectie opent/sluit
+    handleLeaderToggle(leader, isOpen) {
+        console.log(`Toggle leader ${leader}: ${isOpen}`);
+        // Update alleen de state, geen re-render
+        this.leaderOpenState[leader] = isOpen;
     }
 }
 

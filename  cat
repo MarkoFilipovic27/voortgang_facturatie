@@ -1,0 +1,278 @@
+[1mdiff --git a/app.js b/app.js[m
+[1mindex 25a12f4..93900c8 100644[m
+[1m--- a/app.js[m
+[1m+++ b/app.js[m
+[36m@@ -275,8 +275,8 @@[m [mclass App {[m
+                         </div>[m
+                         <div class="p-4 space-y-4">[m
+                             <!-- Existing cumulative bars are replaced by the new table -->[m
+[31m-                            <div id="detailed-work-types-table">[m
+[31m-                                ${this.renderDetailedWorkTypesTable(project.detailedWorkTypes)}[m
+[32m+[m[32m                            <div id="cumulative-work-types-uren">[m
+[32m+[m[32m                                ${this.renderCumulativeBars(project.cumulativeWorkTypes, this.cumulativeViewMode === 'uren')}[m
+                             </div>[m
+                         </div>[m
+                     </div>[m
+[36m@@ -289,7 +289,12 @@[m [mclass App {[m
+                             <h3 class="text-lg font-semibold text-slate-700">Nacalculatie kosten</h3>[m
+                         </div>[m
+                         <div class="space-y-4">[m
+[31m-                            ${this.renderCumulativeCostBars(project.cumulativeCosts)}[m
+[32m+[m[32m                            <div class="mb-6">[m
+[32m+[m[32m                                <h4 class="text-lg font-semibold mb-2 text-slate-700">Kostensoorten</h4>[m
+[32m+[m[32m                                <div id="cumulative-costs">[m
+[32m+[m[32m                                    ${this.renderCumulativeCostBars(project.cumulativeCosts)}[m
+[32m+[m[32m                                </div>[m
+[32m+[m[32m                            </div>[m
+                         </div>[m
+                     </div>[m
+                     ` : ''}[m
+[36m@@ -308,71 +313,6 @@[m [mclass App {[m
+         `;[m
+     }[m
+ [m
+[31m-    // NEW Helper to render the detailed work types table[m
+[31m-    renderDetailedWorkTypesTable(detailedWorkTypes) {[m
+[31m-        if (!detailedWorkTypes || detailedWorkTypes.length === 0) {[m
+[31m-            return '<p class="text-sm text-slate-500">Geen cumulatieve werksoort data beschikbaar.</p>';[m
+[31m-        }[m
+[31m-[m
+[31m-        // Calculate totals[m
+[31m-        const totalBudgetHours = detailedWorkTypes.reduce((sum, item) => sum + item.budgetHours, 0);[m
+[31m-        const totalActualHours = detailedWorkTypes.reduce((sum, item) => sum + item.actualHours, 0);[m
+[31m-        const totalDiffHours = detailedWorkTypes.reduce((sum, item) => sum + item.diffHours, 0);[m
+[31m-        const totalBudgetCosts = detailedWorkTypes.reduce((sum, item) => sum + item.budgetCosts, 0);[m
+[31m-        const totalActualCosts = detailedWorkTypes.reduce((sum, item) => sum + item.actualCosts, 0);[m
+[31m-        const totalDiffCosts = detailedWorkTypes.reduce((sum, item) => sum + item.diffCosts, 0);[m
+[31m-[m
+[31m-        let tableHtml = `[m
+[31m-            <table class="min-w-full divide-y divide-slate-200">[m
+[31m-                <thead class="bg-slate-50">[m
+[31m-                    <tr>[m
+[31m-                        <th scope="col" class="px-3 py-2 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Werksoort</th>[m
+[31m-                        <th scope="col" class="px-3 py-2 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Budget Uren</th>[m
+[31m-                        <th scope="col" class="px-3 py-2 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Nacalculatie Uren</th>[m
+[31m-                        <th scope="col" class="px-3 py-2 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Verschil Uren</th>[m
+[31m-                        <th scope="col" class="px-3 py-2 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Budget Kosten</th>[m
+[31m-                        <th scope="col" class="px-3 py-2 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Nacalculatie Kosten</th>[m
+[31m-                        <th scope="col" class="px-3 py-2 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Verschil Kosten</th>[m
+[31m-                    </tr>[m
+[31m-                </thead>[m
+[31m-                <tbody class="bg-white divide-y divide-slate-200">[m
+[31m-        `;[m
+[31m-[m
+[31m-        detailedWorkTypes.forEach(item => {[m
+[31m-            tableHtml += `[m
+[31m-                <tr class="hover:bg-slate-50">[m
+[31m-                    <td class="px-3 py-2 whitespace-nowrap text-sm text-slate-700" title="${item.itemCode} - ${item.itemDescription}">${item.itemDescription || 'Geen Omschr.'} (${item.itemCode})</td>[m
+[31m-                    <td class="px-3 py-2 whitespace-nowrap text-sm text-slate-500 text-right">${item.budgetHours.toLocaleString()}</td>[m
+[31m-                    <td class="px-3 py-2 whitespace-nowrap text-sm text-slate-500 text-right">${item.actualHours.toLocaleString()}</td>[m
+[31m-                    <td class="px-3 py-2 whitespace-nowrap text-sm ${item.diffHours < 0 ? 'text-red-600' : 'text-slate-500'} text-right">${item.diffHours.toLocaleString()}</td>[m
+[31m-                    <td class="px-3 py-2 whitespace-nowrap text-sm text-slate-500 text-right">€ ${item.budgetCosts.toLocaleString()}</td>[m
+[31m-                    <td class="px-3 py-2 whitespace-nowrap text-sm text-slate-500 text-right">€ ${item.actualCosts.toLocaleString()}</td>[m
+[31m-                    <td class="px-3 py-2 whitespace-nowrap text-sm ${item.diffCosts < 0 ? 'text-red-600' : 'text-slate-500'} text-right">€ ${item.diffCosts.toLocaleString()}</td>[m
+[31m-                </tr>[m
+[31m-            `;[m
+[31m-        });[m
+[31m-[m
+[31m-        // Add Totals Row[m
+[31m-        tableHtml += `[m
+[31m-            <tr class="bg-slate-50 font-semibold">[m
+[31m-                <td class="px-3 py-2 text-left text-sm text-slate-700">TOTAAL</td>[m
+[31m-                <td class="px-3 py-2 text-right text-sm text-slate-700">${totalBudgetHours.toLocaleString()}</td>[m
+[31m-                <td class="px-3 py-2 text-right text-sm text-slate-700">${totalActualHours.toLocaleString()}</td>[m
+[31m-                <td class="px-3 py-2 text-right text-sm ${totalDiffHours < 0 ? 'text-red-600' : 'text-slate-700'}">${totalDiffHours.toLocaleString()}</td>[m
+[31m-                <td class="px-3 py-2 text-right text-sm text-slate-700">€ ${totalBudgetCosts.toLocaleString()}</td>[m
+[31m-                <td class="px-3 py-2 text-right text-sm text-slate-700">€ ${totalActualCosts.toLocaleString()}</td>[m
+[31m-                <td class="px-3 py-2 text-right text-sm ${totalDiffCosts < 0 ? 'text-red-600' : 'text-slate-700'}">€ ${totalDiffCosts.toLocaleString()}</td>[m
+[31m-            </tr>[m
+[31m-        `;[m
+[31m-[m
+[31m-        tableHtml += `[m
+[31m-                </tbody>[m
+[31m-            </table>[m
+[31m-        `;[m
+[31m-[m
+[31m-        return tableHtml;[m
+[31m-    }[m
+[31m-[m
+     // OLD Helper to render cumulative bars (Keep for reference or future use if needed)[m
+     renderCumulativeBars(cumulativeData, isUren) {[m
+         if (!cumulativeData || cumulativeData.length === 0) {[m
+[36m@@ -561,6 +501,24 @@[m [mclass App {[m
+         await this.navigateTo('next');[m
+     }[m
+     [m
+[32m+[m[32m    // Add missing setCumulativeViewMode function[m
+[32m+[m[32m    setCumulativeViewMode(mode) {[m
+[32m+[m[32m        if (mode !== 'uren' && mode !== 'kostprijs') return;[m
+[32m+[m[41m        [m
+[32m+[m[32m        this.cumulativeViewMode = mode;[m
+[32m+[m[32m        const project = this.projects.find(p => p.projectCode === this.selectedProjectCode);[m
+[32m+[m[32m        if (!project) return;[m
+[32m+[m[41m        [m
+[32m+[m[32m        // Update the view for work types[m
+[32m+[m[32m        const container = document.getElementById('cumulative-work-types-uren');[m
+[32m+[m[32m        if (container) {[m
+[32m+[m[32m            container.innerHTML = this.renderCumulativeBars(project.cumulativeWorkTypes, mode === 'uren');[m
+[32m+[m[32m        }[m
+[32m+[m[41m        [m
+[32m+[m[32m        // Re-render the buttons to update styling[m
+[32m+[m[32m        this.renderSingleProject(project);[m
+[32m+[m[32m    }[m
+[32m+[m[41m    [m
+     // --- Existing Methods (potentially needing adjustments later) ---[m
+     // renderProjects() { // We now use renderSingleProject instead[m
+     //     // ... original code removed ...[m
+[36m@@ -589,133 +547,28 @@[m [mclass App {[m
+         if (!phase) return;[m
+ [m
+         // Find the specific input and cell in the DOM[m
+[31m-        const inputElement = this.container.querySelector(`input[onchange*="handleProgressChange('${projectCode}', '${phaseCode}'"]`);[m
+[31m-        const toInvoiceCell = inputElement?.closest('tr').querySelector('.to-invoice');[m
+[31m-[m
+[32m+[m[32m        const inputElement = this.container.querySelector(`input[onchange*="${projectCode}"][onchange*="${phaseCode}"]`);[m
+         if (inputElement) {[m
+             inputElement.value = phase.newProgress === null ? '' : phase.newProgress;[m
+         }[m
+[32m+[m
+[32m+[m[32m        // Update the "to invoice" cell[m
+[32m+[m[32m        const toInvoiceCell = this.container.querySelector(`tr:has(input[onchange*="${projectCode}"][onchange*="${phaseCode}"]) td.to-invoice`);[m
+         if (toInvoiceCell) {[m
+[31m-            // Update classes for color and alignment[m
+[31m-            toInvoiceCell.className = `px-6 py-4 whitespace-nowrap text-sm font-medium ${phase.toInvoice < 0 ? 'text-red-600' : 'text-green-600'} to-invoice text-right`;[m
+             toInvoiceCell.textContent = `€ ${phase.toInvoice.toLocaleString()}`;[m
+[32m+[m[32m            toInvoiceCell.className = `px-6 py-4 whitespace-nowrap text-sm font-medium ${phase.toInvoice < 0 ? 'text-red-600' : 'text-green-600'} to-invoice text-right`;[m
+         }[m
+     }[m
+ [m
+[31m-    async handleSubmitProgress(projectCode) {[m
+[31m-        if (projectCode !== this.selectedProjectCode) return;[m
+[31m-[m
+[31m-        // Find the project in our (now potentially single-item) this.projects array[m
+[31m-        const project = this.projects.find(p => p.projectCode === projectCode);[m
+[31m-        if (!project) return;[m
+[31m-[m
+[31m-        const phasesToProcess = project.phases.filter([m
+[31m-            phase => phase.newProgress !== null && [m
+[31m-            phase.newProgress !== undefined && [m
+[31m-            phase.toInvoice > 0[m
+[31m-        );[m
+[31m-[m
+[31m-        if (phasesToProcess.length === 0) {[m
+[31m-            alert('Er zijn geen nieuwe voortgangspercentages met een te factureren bedrag gevonden voor dit project.');[m
+[31m-            return;[m
+[31m-        }[m
+[31m-[m
+[31m-        const confirmation = confirm([m
+[31m-            `Weet u zeker dat u de voortgang voor project ${projectCode} wilt verwerken? Er zullen ${phasesToProcess.length} factuurregels worden aangemaakt.`[m
+[31m-        );[m
+[31m-[m
+[31m-        if (confirmation) {[m
+[31m-            this.showMainContentLoading(); // Show loading indicator[m
+[31m-            const results = [];[m
+[31m-            try {[m
+[31m-                for (const phase of phasesToProcess) {[m
+[31m-                    const result = await this.afasApi.createDirectInvoice([m
+[31m-                        project.projectCode,[m
+[31m-                        phase.phaseCode,[m
+[31m-                        phase.toInvoice[m
+[31m-                    );[m
+[31m-                    results.push({ phase: phase.phaseCode, ...result });[m
+[31m-                }[m
+[31m-[m
+[31m-                const successCount = results.filter(r => r.success).length;[m
+[31m-                const failCount = results.filter(r => !r.success).length;[m
+[31m-[m
+[31m-                let message = `${successCount} factuurregels succesvol verwerkt.`;[m
+[31m-                if (failCount > 0) {[m
+[31m-                    message += `\n${failCount} factuurregels NIET verwerkt:\n`;[m
+[31m-                    results.filter(r => !r.success).forEach(r => {[m
+[31m-                        message += `- Fase ${r.phase}: ${r.details || r.message}\n`;[m
+[31m-                    });[m
+[31m-                } else if (successCount > 0) {[m
+[31m-                    const invoiceNumbers = results[m
+[31m-                        .filter(r => r.success && r.invoiceNumber)[m
+[31m-                        .map(r => `Fase ${r.phase}: ${r.invoiceNumber}`)[m
+[31m-                        .join('\n');[m
+[31m-                    if (invoiceNumbers) {[m
+[31m-                        message += `\nFactuurnummers:\n${invoiceNumbers}`;[m
+[31m-                    }[m
+[31m-                }[m
+[31m-                alert(message);[m
+[31m-[m
+[31m-                // Refresh only the current project's data after submission[m
+[31m-                await this.selectProject(projectCode);[m
+[31m-[m
+[31m-            } catch (error) {[m
+[31m-                console.error('Error submitting progress:', error);[m
+[31m-                alert('Er is een onverwachte fout opgetreden bij het verwerken van de voortgang.');[m
+[31m-                // Still refresh current project data even if there was an error[m
+[31m-                await this.selectProject(projectCode);[m
+[31m-            }[m
+[31m-        }[m
+[31m-    }[m
+[31m-[m
+[31m-    handleLeaderToggle(leader, isOpen) {[m
+[31m-        this.leaderOpenState[leader] = isOpen;[m
+[31m-        // Optional: Log state changes for debugging[m
+[31m-        // console.log('Leader Open State:', this.leaderOpenState); [m
+[31m-    }[m
+[31m-[m
+[31m-    // NEW: Function to toggle cumulative view[m
+[31m-    setCumulativeViewMode(mode) {[m
+[31m-        if (mode === this.cumulativeViewMode) return; // No change[m
+[31m-        this.cumulativeViewMode = mode;[m
+[31m-        // Re-render the current project to reflect the change[m
+[31m-        if (this.selectedProjectCode && this.projects.length > 0) {[m
+[31m-            this.renderSingleProject(this.projects[0]); [m
+[31m-        }[m
+[31m-    }[m
+[31m-[m
+[31m-    // Fetch project data for the sidebar[m
+[31m-    async fetchSidebarProjects() {[m
+[31m-        const connector = 'Cursor_Voortgang_Projecten_per_projectleider'; // Original connector[m
+[31m-        console.log(`Fetching sidebar projects using connector: ${connector}`); [m
+[31m-        try {[m
+[31m-            // Rely on proxy to add skip/take/orderby[m
+[31m-            const data = await this.afasApi._fetchData(connector, {}); [m
+[31m-            [m
+[31m-            // Check if data is an array directly, or if it has a rows property which is an array[m
+[31m-            const rows = Array.isArray(data) ? data : (data && Array.isArray(data.rows)) ? data.rows : null;[m
+[31m-            [m
+[31m-            if (rows === null) {[m
+[31m-                 console.error('Invalid data structure received for sidebar projects (expected array or {rows: array}):', data);[m
+[31m-                 throw new Error('Ongeldige data structuur ontvangen voor projectenlijst.');[m
+[31m-            }[m
+[31m-            [m
+[31m-            this.sidebarData = rows; // Use the extracted rows[m
+[31m-            this.groupedSidebarData = this.groupProjectsByLeader(this.sidebarData);[m
+[31m-            this.renderSidebar(); // Render the actual sidebar[m
+[31m-            console.log('Successfully fetched and rendered sidebar projects:', this.sidebarData.length);[m
+[31m-            [m
+[31m-        } catch (error) {[m
+[31m-            console.error('Failed to fetch sidebar projects:', error);[m
+[31m-            this.showSidebarError('Fout bij laden projectlijst.'); [m
+[31m-        }[m
+[32m+[m[32m    handleSubmitProgress(projectCode) {[m
+[32m+[m[32m        return new Promise((resolve) => {[m
+[32m+[m[32m            // In a real app, this would save to backend[m
+[32m+[m[32m            console.log(`Submitting progress for project ${projectCode}`);[m
+[32m+[m[32m            // Simulate API call delay[m
+[32m+[m[32m            setTimeout(() => {[m
+[32m+[m[32m                console.log(`Progress submitted for project ${projectCode}`);[m
+[32m+[m[32m                resolve();[m
+[32m+[m[32m            }, 500);[m
+[32m+[m[32m        });[m
+     }[m
+[31m-}[m
+[31m-[m
+[31m-// Initialize the application[m
+[31m-console.log('--- Initializing App ---');[m
+[31m-const app = new App();[m
+[31m-app.init();[m
+[31m-console.log('--- App initialized globally ---');[m
+[31m-window.app = app; // Make app global for button clicks [m
+\ No newline at end of file[m
+[32m+[m[32m}[m
+\ No newline at end of file[m
