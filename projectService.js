@@ -183,7 +183,7 @@ class ProjectService {
         invoiceTermRowsArray.forEach(row => {
             const projectCode = row.Projectnummer;
             const phaseCode = row.Projectfase; 
-            const contractSum = parseFloat(row.Contractsom) || 0; // Assuming field name 'Contractsom'
+            const contractSum = parseFloat(row.Termijnbedrag) || 0; // Corrected field name to 'Termijnbedrag'
 
             if (!projectCode || !phaseCode) {
                 console.warn(`Invoice Term Row - Skipping due to missing Projectnummer or Projectfase`, row);
