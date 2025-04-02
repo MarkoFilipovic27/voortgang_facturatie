@@ -13,12 +13,13 @@ class ProjectService {
         }
         try {
             // Fetch all data in parallel: base phases, cumulative work types, cumulative costs, and invoice terms
-            const [baseData, cumulativeWorkTypeData, cumulativeCostData, invoiceTermData, actualCostData] = await Promise.all([
+            const [baseData, cumulativeWorkTypeData, cumulativeCostData, invoiceTermData, actualCostData, actualWorkTypeData] = await Promise.all([
                 this.afasApi.fetchBaseProjectAndPhases(projectCode), 
                 this.afasApi.fetchCumulativeWorkTypeData(projectCode), // Gets cumulative work types for bars
                 this.afasApi.fetchCumulativeCostData(projectCode),   // Gets cumulative costs for bars
                 this.afasApi.fetchInvoiceTerms(projectCode),
-                this.afasApi.fetchActualCosts(projectCode) // Fetch actual costs for phase totals
+                this.afasApi.fetchActualCosts(projectCode), // Fetch actual costs for phase totals
+                this.afasApi.fetchActualWorkTypes(projectCode) // Fetch actual work types for table column
             ]);
 
             // Log raw data
@@ -27,6 +28,7 @@ class ProjectService {
             console.log('Raw Cumulative Costs:', cumulativeCostData); 
             console.log('Raw Invoice Terms:', invoiceTermData); 
             console.log('Raw Actual Costs:', actualCostData);
+            console.log('Raw Actual Work Types (for table column):', actualWorkTypeData);
 
             // Extract the rows array if the data is in {rows: [...]} format
             const baseRowsArg = (baseData && baseData.rows) ? baseData.rows : (Array.isArray(baseData) ? baseData : []); 
@@ -34,6 +36,7 @@ class ProjectService {
             const cumulativeCostRowsArg = (cumulativeCostData && cumulativeCostData.rows) ? cumulativeCostData.rows : (Array.isArray(cumulativeCostData) ? cumulativeCostData : []); 
             const invoiceTermRowsArg = (invoiceTermData && invoiceTermData.rows) ? invoiceTermData.rows : (Array.isArray(invoiceTermData) ? invoiceTermData : []); 
             const actualCostRowsArg = (actualCostData && actualCostData.rows) ? actualCostData.rows : (Array.isArray(actualCostData) ? actualCostData : []);
+            const actualWorkTypeRowsArg = (actualWorkTypeData && actualWorkTypeData.rows) ? actualWorkTypeData.rows : (Array.isArray(actualWorkTypeData) ? actualWorkTypeData : []);
 
             // Check lengths before transforming
             console.log(`CHECK baseRowsArg length: ${baseRowsArg.length}`);
@@ -41,6 +44,7 @@ class ProjectService {
             console.log(`CHECK cumulativeCostRowsArg length: ${cumulativeCostRowsArg.length}`); 
             console.log(`CHECK invoiceTermRowsArg length: ${invoiceTermRowsArg.length}`); 
             console.log(`CHECK actualCostRowsArg length: ${actualCostRowsArg.length}`);
+            console.log(`CHECK actualWorkTypeRowsArg length: ${actualWorkTypeRowsArg.length}`);
 
             // Transform the fetched data
             const transformedData = this.transformData(
@@ -48,7 +52,8 @@ class ProjectService {
                 cumulativeWorkTypeRowsArg,   
                 cumulativeCostRowsArg, 
                 invoiceTermRowsArg,
-                actualCostRowsArg
+                actualCostRowsArg,
+                actualWorkTypeRowsArg
             );
 
             return transformedData;
@@ -58,7 +63,7 @@ class ProjectService {
         }
     }
 
-    transformData(baseRows, cumulativeWorkTypeRows, cumulativeCostRows, invoiceTermRows, actualCostRows) { 
+    transformData(baseRows, cumulativeWorkTypeRows, cumulativeCostRows, invoiceTermRows, actualCostRows, actualWorkTypeRows) { 
         console.log('Starting data transformation...');
         
         // Ensure we're working with arrays
@@ -67,13 +72,15 @@ class ProjectService {
         const cumulativeCostRowsArray = Array.isArray(cumulativeCostRows) ? cumulativeCostRows : (cumulativeCostRows?.rows || []); 
         const invoiceTermRowsArray = Array.isArray(invoiceTermRows) ? invoiceTermRows : (invoiceTermRows?.rows || []); 
         const actualCostRowsArray = Array.isArray(actualCostRows) ? actualCostRows : (actualCostRows?.rows || []);
+        const actualWorkTypeRowsArray = Array.isArray(actualWorkTypeRows) ? actualWorkTypeRows : (actualWorkTypeRows?.rows || []);
 
         console.log('Processed arrays lengths:', {
             base: baseRowsArray.length,
             cumulativeWorkTypes: cumulativeWorkTypeRowsArray.length, 
             cumulativeCosts: cumulativeCostRowsArray.length, 
             invoiceTerms: invoiceTermRowsArray.length,
-            actualCosts: actualCostRowsArray.length
+            actualCosts: actualCostRowsArray.length,
+            actualWorkTypes: actualWorkTypeRowsArray.length
         });
 
         // Create a map of projects for efficient lookup
@@ -190,20 +197,54 @@ class ProjectService {
             }
         });
 
-        // Removed processing for detailedWorkTypes
+        // Process actual work type data specifically for the "Nacalculatie Werksoorten" column in the table
+        console.log('Processing Actual Work Type rows (for table column)...', actualWorkTypeRowsArray);
         
+        // Map om de werksoorten per fase bij te houden voor de tabel
+        const tableWorkTypesByPhase = new Map();
+        
+        actualWorkTypeRowsArray.forEach(row => {
+            const projectCode = row.Projectnummer;
+            const phaseCode = row.Projectfase;
+            // We gebruiken Kostprijsbedrag voor het bedrag
+            const workTypeAmount = parseFloat(row.Kostprijsbedrag) || 0;
+            
+            if (!projectCode || !phaseCode) {
+                console.warn(`Actual Work Type Row - Skipping due to missing Projectnummer or Projectfase`, row);
+                return;
+            }
+            
+            if (workTypeAmount === 0) return; // Skip zero amounts
+            
+            const lookupKey = String(projectCode).trim();
+            const project = projectMap.get(lookupKey);
+            
+            if (project && project.phases.has(phaseCode)) {
+                const phase = project.phases.get(phaseCode);
+                
+                // Bijhouden in de map voor debug
+                const key = `${projectCode}-${phaseCode}`;
+                const currentWorkTypeAmount = tableWorkTypesByPhase.get(key) || 0;
+                tableWorkTypesByPhase.set(key, currentWorkTypeAmount + workTypeAmount);
+                
+                // Update de fase
+                phase.actualWorkTypes += workTypeAmount;
+                console.log(`Adding work type amount ${workTypeAmount} to Project ${projectCode}, Phase ${phaseCode}. Current actualWorkTypes: ${phase.actualWorkTypes}`);
+            } else {
+                console.warn(`Actual work type row found for project ${projectCode}, phase ${phaseCode} not in base structure or phase map:`, row);
+            }
+        });
+        
+        // Debug info over de werksoorten totalen per fase
+        console.log('Table work types by phase:', Object.fromEntries(tableWorkTypesByPhase));
+
         // Process actual cost data to update phase actual costs (KEEP THIS PART for the main table)
         console.log('Processing Actual Cost rows (for phase totals)...', actualCostRowsArray); // Log message adjusted
-        
-        // Map om de werksoorten per fase bij te houden
-        const workTypesByPhase = new Map();
         
         actualCostRowsArray.forEach(row => {
             const projectCode = row.Projectnummer; 
             const phaseCode = row.Projectfase; // Assuming Projectfase exists here too
             const costAmount = parseFloat(row.Kostprijsbedrag) || 0; // Use Kostprijsbedrag
-            // Controleer of het een werksoort-kostensoort is (dit zijn meestal kostensoorten die beginnen met 3xx)
-            const isWorkType = String(row.KOSTENSOORT || '').startsWith('3');
 
             if (!projectCode || !phaseCode) {
                 console.warn(`Actual Cost Row - Skipping due to missing Projectnummer or Projectfase`, row);
@@ -219,25 +260,10 @@ class ProjectService {
                 const phase = project.phases.get(phaseCode);
                 // console.log(`Adding actual cost ${costAmount} to Project ${projectCode}, Phase ${phaseCode}. Current: ${phase.actualCosts}`);
                 phase.actualCosts += costAmount; // Add cost to phase total
-                
-                // Als het een werksoort betreft, voeg toe aan actualWorkTypes
-                if (isWorkType) {
-                    // Bijhouden in de map voor debug
-                    const key = `${projectCode}-${phaseCode}`;
-                    const currentWorkTypeAmount = workTypesByPhase.get(key) || 0;
-                    workTypesByPhase.set(key, currentWorkTypeAmount + costAmount);
-                    
-                    // Update de fase
-                    phase.actualWorkTypes += costAmount;
-                    console.log(`Adding work type cost ${costAmount} to Project ${projectCode}, Phase ${phaseCode}. Current workTypes: ${phase.actualWorkTypes}`);
-                }
             } else {
                  console.warn(`Actual cost row found for project ${projectCode}, phase ${phaseCode} not in base structure or phase map:`, row);
             }
         });
-        
-        // Debug info over de werksoort totalen per fase
-        console.log('Work types by phase:', Object.fromEntries(workTypesByPhase));
 
         // NEW: Process Invoice Term data to update contract sums
         console.log('Processing Invoice Term rows...', invoiceTermRowsArray);
