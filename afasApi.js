@@ -54,15 +54,15 @@ class AfasApi {
     async fetchProjects() {
         const connector = 'Cursor_Voortgang_Projecten';
         console.log(`Fetching projects using connector: ${connector}`);
-        return this._fetchData(connector, { take: -1 });
+        return this._fetchData(connector, { take: 1000 });
     }
 
     async fetchCumulativeWorkTypeData(projectCode = null) {
         const connector = 'Cursor_Voortgang_Nacalculatie_Werksoorten';
-        const options = { take: -1 };
+        const options = { take: 1000 };
         if (projectCode) {
-             console.log(`Fetching cumulative work type data for project ${projectCode}`);
-            options.filterfieldids = 'Projectnummer'; // Use correct field name
+            console.log(`Fetching cumulative work type data for project ${projectCode}`);
+            options.filterfieldids = 'Projectnummer';
             options.filtervalues = projectCode;
         } else {
             console.log('Fetching all cumulative work type data');
@@ -73,10 +73,10 @@ class AfasApi {
     // Keep fetchContractSumsAndPhases if it's still needed, update to use _fetchData
     async fetchContractSumsAndPhases(projectCode = null) {
         const connector = 'Cursor_Voortgang_Projecten_Contractsom_Fase'; 
-        const options = { take: -1 };
+        const options = { take: 1000 };
         if (projectCode) {
             console.log(`Fetching contract sums and phases for project ${projectCode}`);
-            options.filterfieldids = 'Projectnummer'; // Assuming filter field is Projectnummer
+            options.filterfieldids = 'Projectnummer';
             options.filtervalues = projectCode;
         } else {
             console.log('Fetching all contract sums and phases');
@@ -86,10 +86,10 @@ class AfasApi {
 
     async fetchCumulativeCostData(projectCode = null) {
         const connector = 'Cursor_Voortgang_Projecten_Cumulatieven_Kosten';
-        const options = { take: -1 };
+        const options = { take: 1000 };
         if (projectCode) {
             console.log(`Fetching cumulative cost data for project ${projectCode}`);
-            options.filterfieldids = 'Projectnummer'; // Use correct field name based on previous findings
+            options.filterfieldids = 'Projectnummer';
             options.filtervalues = projectCode;
         } else {
             console.log('Fetching all cumulative cost data');
@@ -326,7 +326,6 @@ class AfasApi {
     async fetchProjectsForSidebar() {
         const connector = 'Cursor_Voortgang_Projecten_per_Projectleider';
         console.log(`Fetching sidebar projects using connector: ${connector}`);
-        // Use the _fetchData helper with the correct connector name
-        return this._fetchData(connector, { take: -1 }); 
+        return this._fetchData(connector, { take: 1000 }); 
     }
 } 
