@@ -3,7 +3,7 @@ const fetch = require('node-fetch'); // Use node-fetch for Node.js environments
 exports.handler = async function(event, context) {
     try {
         // Extract connector and other parameters from query string
-        const { connector, ...params } = event.queryParams || {};
+        const { connector, ...params } = event.queryStringParameters || {};
         
         if (!connector) {
             throw new Error('Connector parameter is required');
