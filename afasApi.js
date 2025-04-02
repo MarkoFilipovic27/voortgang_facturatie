@@ -10,47 +10,36 @@ class AfasApi {
     // Define the Netlify function endpoint
     netlifyProxyEndpoint = '/.netlify/functions/afas-proxy';
 
-    async _fetchData(connector, options = {}) {
-        const params = new URLSearchParams();
-        params.append('connector', connector);
-        
-        // Only add take parameter if explicitly provided
-        if (options.take !== undefined) {
-            params.append('take', options.take.toString());
-        }
-
-        if (options.skip) params.append('skip', options.skip);
-        if (options.filterfieldids) params.append('filterfieldids', options.filterfieldids);
-        if (options.filtervalues) params.append('filtervalues', options.filtervalues);
-        if (options.operatortypes) params.append('operatortypes', options.operatortypes);
-
-        const url = `${this.netlifyProxyEndpoint}?${params.toString()}`;
-        console.log(`Calling Netlify proxy: ${url}`);
-
+    async _fetchData(connector, params = {}) {
+        const queryString = new URLSearchParams(params).toString();
+        console.log(`_fetchData called for connector: ${connector}, params:`, params);
         try {
-            const response = await fetch(url, {
-                method: 'GET',
-                headers: {
-                    'Accept': 'application/json',
-                },
-            });
+            const response = await fetch(`${this.netlifyProxyEndpoint}?connector=${encodeURIComponent(connector)}${queryString ? '&' + queryString : ''}`);
+            
+            console.log(`_fetchData - Response status for ${connector}: ${response.status}`);
 
             if (!response.ok) {
-                let errorData;
+                let errorDetails = await response.text(); // Try to get text body for error details
                 try {
-                    errorData = await response.json();
+                    // Attempt to parse as JSON if possible, might contain more info
+                    const jsonError = JSON.parse(errorDetails);
+                    errorDetails = jsonError; 
                 } catch (e) {
-                    errorData = { error: await response.text() };
+                    // If not JSON, use the raw text
                 }
-                console.error(`Error fetching ${connector} via proxy:`, response.status, errorData);
-                throw new Error(`Failed to fetch ${connector}: ${response.status} ${response.statusText} - ${JSON.stringify(errorData)}`);
+                console.error(`_fetchData - Error response body for ${connector}:`, errorDetails);
+                throw new Error(`Failed to fetch ${connector}: ${response.status} ${response.statusText}`);
             }
-
+            
             const data = await response.json();
-            return data.rows || [];
+            console.log(`_fetchData - Raw data received for ${connector}:`, JSON.stringify(data).substring(0, 500) + '...'); // Log first 500 chars of raw data
+            
+            // Return the direct data (handle potential {rows: ...} structure later if needed)
+            return data; 
+
         } catch (error) {
-            console.error(`Network or other error fetching ${connector} via proxy:`, error);
-            throw error;
+            console.error(`Error in _fetchData for ${connector}:`, error);
+            throw error; // Re-throw
         }
     }
 
