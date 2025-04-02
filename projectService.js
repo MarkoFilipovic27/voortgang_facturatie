@@ -21,13 +21,19 @@ class ProjectService {
 
             // Log raw data
             console.log('Raw Base Project/Phases:', baseData);
+            console.log('Raw Base Project/Phases type:', typeof baseData);
+            console.log('Raw Base Project/Phases structure:', baseData ? Object.keys(baseData) : 'null');
             console.log('Raw Cumulative Work Types:', cumulativeWorkTypeData);
+            console.log('Raw Cumulative Work Types type:', typeof cumulativeWorkTypeData);
+            console.log('Raw Cumulative Work Types structure:', cumulativeWorkTypeData ? Object.keys(cumulativeWorkTypeData) : 'null');
             console.log('Raw Cumulative Costs:', cumulativeCostData);
+            console.log('Raw Cumulative Costs type:', typeof cumulativeCostData);
+            console.log('Raw Cumulative Costs structure:', cumulativeCostData ? Object.keys(cumulativeCostData) : 'null');
 
-            // Use the actual data arrays (already handled in API methods)
-            const baseRowsArg = baseData || []; 
-            const cumulativeRowsArg = cumulativeWorkTypeData || []; 
-            const cumulativeCostRowsArg = cumulativeCostData || []; // Define cost data argument
+            // Extract the rows array if the data is in {rows: [...]} format
+            const baseRowsArg = (baseData && baseData.rows) ? baseData.rows : (Array.isArray(baseData) ? baseData : []); 
+            const cumulativeRowsArg = (cumulativeWorkTypeData && cumulativeWorkTypeData.rows) ? cumulativeWorkTypeData.rows : (Array.isArray(cumulativeWorkTypeData) ? cumulativeWorkTypeData : []); 
+            const cumulativeCostRowsArg = (cumulativeCostData && cumulativeCostData.rows) ? cumulativeCostData.rows : (Array.isArray(cumulativeCostData) ? cumulativeCostData : []); 
 
             // Check lengths before transforming
             console.log(`CHECK baseRowsArg length: ${baseRowsArg.length}`);
