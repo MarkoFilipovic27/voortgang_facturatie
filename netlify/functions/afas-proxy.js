@@ -57,7 +57,7 @@ exports.handler = async function(event, context) {
         const response = await fetch(finalUrl, {
             method: 'GET',
             headers: {
-                'Authorization': token,
+                'Authorization': `AfasToken ${token}`,
                 'Content-Type': 'application/json'
             }
         });
