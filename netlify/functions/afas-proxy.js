@@ -77,7 +77,7 @@ exports.handler = async (event, context) => {
             finalUrl: targetUrl.replace(/token/gi, '[hidden]'),
             headers: {
                 'Authorization': 'AfasToken [hidden]',
-                'Accept': 'application/json',
+                'Accept': 'application/json, application/xml',
                 'Accept-Language': 'nl-nl'
             }
         });
@@ -87,7 +87,7 @@ exports.handler = async (event, context) => {
             method: 'GET',
             headers: {
                 'Authorization': `AfasToken ${afasToken}`,
-                'Accept': 'application/json',
+                'Accept': 'application/json, application/xml',
                 'Accept-Language': 'nl-nl'
             },
         });
@@ -102,6 +102,7 @@ exports.handler = async (event, context) => {
         // Get the raw text first
         const text = await response.text();
         console.log('Raw response text:', text);
+        console.log('Response content-type:', response.headers.get('content-type'));
 
         // If response is not ok, return detailed error
         if (!response.ok) {
