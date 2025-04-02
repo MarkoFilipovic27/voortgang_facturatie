@@ -13,13 +13,14 @@ class ProjectService {
         }
         try {
             // Fetch all data in parallel: base phases, cumulative work types, cumulative costs, and invoice terms
-            const [baseData, cumulativeWorkTypeData, cumulativeCostData, invoiceTermData, actualCostData, actualWorkTypeData] = await Promise.all([
+            const [baseData, cumulativeWorkTypeData, cumulativeCostData, invoiceTermData, actualCostData, actualWorkTypeData, invoiceData] = await Promise.all([
                 this.afasApi.fetchBaseProjectAndPhases(projectCode), 
                 this.afasApi.fetchCumulativeWorkTypeData(projectCode), // Gets cumulative work types for bars
                 this.afasApi.fetchCumulativeCostData(projectCode),   // Gets cumulative costs for bars
                 this.afasApi.fetchInvoiceTerms(projectCode),
                 this.afasApi.fetchActualCosts(projectCode), // Fetch actual costs for phase totals
-                this.afasApi.fetchActualWorkTypes(projectCode) // Fetch actual work types for table column
+                this.afasApi.fetchActualWorkTypes(projectCode), // Fetch actual work types for table column
+                this.afasApi.fetchInvoicedAmounts(projectCode) // Fetch invoiced amounts for "Gefactureerd" column
             ]);
 
             // Log raw data
@@ -29,6 +30,7 @@ class ProjectService {
             console.log('Raw Invoice Terms:', invoiceTermData); 
             console.log('Raw Actual Costs:', actualCostData);
             console.log('Raw Actual Work Types (for table column):', actualWorkTypeData);
+            console.log('Raw Invoiced Amounts:', invoiceData);
 
             // Extract the rows array if the data is in {rows: [...]} format
             const baseRowsArg = (baseData && baseData.rows) ? baseData.rows : (Array.isArray(baseData) ? baseData : []); 
@@ -45,6 +47,7 @@ class ProjectService {
             console.log(`CHECK invoiceTermRowsArg length: ${invoiceTermRowsArg.length}`); 
             console.log(`CHECK actualCostRowsArg length: ${actualCostRowsArg.length}`);
             console.log(`CHECK actualWorkTypeRowsArg length: ${actualWorkTypeRowsArg.length}`);
+            console.log(`CHECK invoiceData:`, invoiceData);
 
             // Transform the fetched data
             const transformedData = this.transformData(
@@ -55,6 +58,11 @@ class ProjectService {
                 actualCostRowsArg,
                 actualWorkTypeRowsArg
             );
+            
+            // Update invoiced amounts for each project
+            for (const project of transformedData) {
+                this.updateProjectWithInvoicedAmounts(project, invoiceData);
+            }
 
             return transformedData;
         } catch (error) {
