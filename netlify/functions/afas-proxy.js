@@ -51,8 +51,8 @@ exports.handler = async (event, context) => {
             }
         }
 
-        // Construct final URL - the baseUri should already include /ProfitRestServices
-        const targetUrl = `${cleanBaseUri}/connectors/${connectorPath}${params.toString() ? '?' + params.toString() : ''}`;
+        // Construct final URL - baseUri already includes /ProfitRestServices/connectors/
+        const targetUrl = `${cleanBaseUri}/${connectorPath}${params.toString() ? '?' + params.toString() : ''}`;
 
         console.log('AFAS API Request Details:', {
             baseUri: cleanBaseUri,
