@@ -30,7 +30,7 @@ exports.handler = async function(event, context) {
         const queryParams = {
             skip: 0,
             take: 1000,
-            orderbyfieldids: '',
+            orderbyfieldids: 'Projectnummer',
             ...params
         };
 
