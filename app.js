@@ -276,7 +276,7 @@ class App {
                         <div class="p-4 space-y-4">
                             <!-- Existing cumulative bars are replaced by the new table -->
                             <div id="detailed-work-types-table">
-                                ${this.renderDetailedWorkTypesTable(project.cumulativeWorkTypes)}
+                                ${this.renderDetailedWorkTypesTable(project.detailedWorkTypes)}
                             </div>
                         </div>
                     </div>
