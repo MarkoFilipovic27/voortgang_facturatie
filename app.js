@@ -351,7 +351,7 @@ class App {
         `;
     }
 
-    // OLD Helper to render cumulative bars (Keep for reference or future use if needed)
+    // Helper to render cumulative bars for werksoorten
     renderCumulativeBars(cumulativeData, isUren) {
         console.log('renderCumulativeBars called with data:', cumulativeData);
         console.log('isUren:', isUren);
@@ -373,9 +373,10 @@ class App {
                  <span class="w-48 pr-2 text-sm font-semibold text-slate-600">Totaal</span>
                  <div class="flex-1 mx-4">
                      <div class="w-full bg-slate-200 rounded-full h-4 relative">
-                        <div class="progress-bar-inner bg-blue-600 hover:bg-blue-700 h-4 rounded-full text-white flex items-center justify-start pl-2 text-xs" style="width: ${totalProgress}%;">
-                           ${totalActual > 0 ? (isUren ? totalActual.toLocaleString() : '€' + totalActual.toLocaleString()) : ''} 
+                        <div class="progress-bar-inner bg-blue-600 hover:bg-blue-700 h-4 rounded-full flex items-center ${totalProgress < 30 ? 'justify-end pr-1' : 'justify-start pl-2'} text-xs" style="width: ${totalProgress}%;">
+                           ${totalProgress < 30 ? '' : (totalActual > 0 ? `<span class="text-white">${isUren ? totalActual.toLocaleString() : '€' + totalActual.toLocaleString()}</span>` : '')}
                          </div>
+                         ${totalProgress < 30 && totalActual > 0 ? `<span class="absolute left-2 top-0 bottom-0 flex items-center text-xs text-slate-700">${isUren ? totalActual.toLocaleString() : '€' + totalActual.toLocaleString()}</span>` : ''}
                     </div>
                 </div>
                 <span class="w-20 text-sm text-right text-slate-500">
@@ -395,9 +396,10 @@ class App {
                     <span class="w-48 pr-2 text-sm text-slate-600 truncate" title="${labelText}">${labelText}</span>
                     <div class="flex-1 mx-4">
                          <div class="w-full bg-slate-200 rounded-full h-4 relative">
-                            <div class="progress-bar-inner bg-blue-600 hover:bg-blue-700 h-4 rounded-full text-white flex items-center justify-start pl-2 text-xs" style="width: ${progressPercent}%;">
-                               ${actual > 0 ? (isUren ? actual.toLocaleString() : '€' + actual.toLocaleString()) : ''} 
+                            <div class="progress-bar-inner bg-blue-600 hover:bg-blue-700 h-4 rounded-full flex items-center ${progressPercent < 30 ? 'justify-end pr-1' : 'justify-start pl-2'} text-xs" style="width: ${progressPercent}%;">
+                               ${progressPercent < 30 ? '' : (actual > 0 ? `<span class="text-white">${isUren ? actual.toLocaleString() : '€' + actual.toLocaleString()}</span>` : '')}
                              </div>
+                             ${progressPercent < 30 && actual > 0 ? `<span class="absolute left-2 top-0 bottom-0 flex items-center text-xs text-slate-700">${isUren ? actual.toLocaleString() : '€' + actual.toLocaleString()}</span>` : ''}
                         </div>
                     </div>
                      <span class="w-20 text-sm text-right text-slate-500">
@@ -427,7 +429,7 @@ class App {
                  <div class="flex-1 mx-4">
                      <div class="w-full bg-slate-200 rounded-full h-4 relative">
                         <div class="progress-bar-inner bg-purple-600 hover:bg-purple-700 h-4 rounded-full flex items-center ${totalProgress < 30 ? 'justify-end pr-1' : 'justify-start pl-2'} text-xs" style="width: ${totalProgress}%;">
-                           ${totalProgress < 30 ? '' : (totalActual > 0 ? '€' + totalActual.toLocaleString() : '')}
+                           ${totalProgress < 30 ? '' : (totalActual > 0 ? `<span class="text-white">€${totalActual.toLocaleString()}</span>` : '')}
                          </div>
                          ${totalProgress < 30 && totalActual > 0 ? `<span class="absolute left-2 top-0 bottom-0 flex items-center text-xs text-slate-700">€${totalActual.toLocaleString()}</span>` : ''}
                     </div>
@@ -450,7 +452,7 @@ class App {
                     <div class="flex-1 mx-4">
                          <div class="w-full bg-slate-200 rounded-full h-4 relative">
                             <div class="progress-bar-inner bg-purple-600 hover:bg-purple-700 h-4 rounded-full flex items-center ${progressPercent < 30 ? 'justify-end pr-1' : 'justify-start pl-2'} text-xs" style="width: ${progressPercent}%;">
-                               ${progressPercent < 30 ? '' : (actual > 0 ? '€' + actual.toLocaleString() : '')}
+                               ${progressPercent < 30 ? '' : (actual > 0 ? `<span class="text-white">€${actual.toLocaleString()}</span>` : '')}
                              </div>
                              ${progressPercent < 30 && actual > 0 ? `<span class="absolute left-2 top-0 bottom-0 flex items-center text-xs text-slate-700">€${actual.toLocaleString()}</span>` : ''}
                         </div>
