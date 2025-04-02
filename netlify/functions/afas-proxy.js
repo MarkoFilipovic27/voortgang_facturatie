@@ -78,9 +78,7 @@ exports.handler = async (event, context) => {
             headers: {
                 'Authorization': 'AfasToken [hidden]',
                 'Accept': 'application/json',
-                'Content-Type': 'application/json',
-                'X-Client': 'Netlify Function',
-                'User-Agent': 'Netlify Function/1.0'
+                'Accept-Language': 'nl-nl'
             }
         });
 
@@ -90,9 +88,7 @@ exports.handler = async (event, context) => {
             headers: {
                 'Authorization': `AfasToken ${afasToken}`,
                 'Accept': 'application/json',
-                'Content-Type': 'application/json',
-                'X-Client': 'Netlify Function',
-                'User-Agent': 'Netlify Function/1.0'
+                'Accept-Language': 'nl-nl'
             },
         });
 
