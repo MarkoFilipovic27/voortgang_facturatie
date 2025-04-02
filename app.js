@@ -15,6 +15,8 @@ class App {
         this.sidebarContainer = document.getElementById('sidebar-container');
         // Ensure global access for event handlers
         window.app = this;
+        // Notificatie container maken
+        this.setupNotificationSystem();
     }
 
     async init() {
@@ -649,16 +651,16 @@ class App {
                     }
                 }
                 
-                // Toon een succesmelding (in een echte applicatie)
+                // Toon een succesmelding met het nieuwe notificatiesysteem
                 if (successMessage) {
                     console.log(`Success: ${successMessage}`);
-                    alert(successMessage);
+                    this.showNotification(successMessage, 'success', 8000);
                 }
                 
-                // Toon evt. foutmelding (in een echte applicatie)
+                // Toon evt. foutmelding met het nieuwe notificatiesysteem
                 if (errorMessage) {
                     console.error(`Error: ${errorMessage}`);
-                    alert(`Waarschuwing: ${errorMessage}`);
+                    this.showNotification(errorMessage, 'error', 10000);
                 }
                 
                 // Update de progress in het project naar de nieuwe waarden (voor UI)
@@ -672,10 +674,121 @@ class App {
                 resolve(successMessage);
             } catch (error) {
                 console.error('Error in handleSubmitProgress:', error);
-                alert(`Er is een fout opgetreden: ${error.message}`);
+                this.showNotification(`Er is een fout opgetreden: ${error.message}`, 'error', 10000);
                 reject(error);
             }
         });
+    }
+
+    // Notificatiesysteem opzetten
+    setupNotificationSystem() {
+        // Creëer een container voor notificaties als die nog niet bestaat
+        if (!document.getElementById('notification-container')) {
+            const notificationContainer = document.createElement('div');
+            notificationContainer.id = 'notification-container';
+            notificationContainer.className = 'fixed top-0 right-0 left-0 flex justify-center items-start z-50 p-4 pointer-events-none';
+            document.body.appendChild(notificationContainer);
+            
+            // Voeg CSS toe voor notificaties
+            const style = document.createElement('style');
+            style.textContent = `
+                .notification {
+                    transition: all 0.3s ease;
+                    max-width: 90%;
+                    margin-bottom: 0.5rem;
+                    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                    pointer-events: auto;
+                    animation: slideDown 0.3s ease forwards;
+                    transform: translateY(-20px);
+                    opacity: 0;
+                }
+                @keyframes slideDown {
+                    to {
+                        transform: translateY(0);
+                        opacity: 1;
+                    }
+                }
+                .notification.success {
+                    background-color: #1e40af;
+                    color: white;
+                    border-left: 4px solid #3b82f6;
+                }
+                .notification.error {
+                    background-color: #b91c1c;
+                    color: white;
+                    border-left: 4px solid #ef4444;
+                }
+                .notification.info {
+                    background-color: #0369a1;
+                    color: white; 
+                    border-left: 4px solid #38bdf8;
+                }
+                .close-btn {
+                    cursor: pointer;
+                    font-weight: bold;
+                    font-size: 1.25rem;
+                    line-height: 1;
+                    transition: opacity 0.2s;
+                }
+                .close-btn:hover {
+                    opacity: 0.7;
+                }
+            `;
+            document.head.appendChild(style);
+        }
+    }
+
+    // Toon een notificatie
+    showNotification(message, type = 'info', duration = 5000) {
+        const container = document.getElementById('notification-container');
+        if (!container) return;
+        
+        // Maak de notificatie element
+        const notification = document.createElement('div');
+        notification.className = `notification ${type} flex items-center justify-between rounded px-4 py-3 mb-2`;
+        
+        // Inhoud van de notificatie
+        const messageEl = document.createElement('div');
+        messageEl.className = 'mr-3';
+        messageEl.textContent = message;
+        
+        // Sluit-knop
+        const closeBtn = document.createElement('button');
+        closeBtn.className = 'close-btn ml-auto';
+        closeBtn.innerHTML = '&times;';
+        closeBtn.addEventListener('click', () => {
+            this.removeNotification(notification);
+        });
+        
+        // Voeg elementen toe aan notificatie
+        notification.appendChild(messageEl);
+        notification.appendChild(closeBtn);
+        
+        // Voeg notificatie toe aan container
+        container.appendChild(notification);
+        
+        // Verwijder na de opgegeven tijd
+        if (duration > 0) {
+            setTimeout(() => {
+                this.removeNotification(notification);
+            }, duration);
+        }
+        
+        return notification;
+    }
+    
+    // Verwijder een notificatie met een fade-out effect
+    removeNotification(notification) {
+        if (!notification) return;
+        
+        notification.style.opacity = '0';
+        notification.style.transform = 'translateY(-20px)';
+        
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 300);
     }
 }
 
