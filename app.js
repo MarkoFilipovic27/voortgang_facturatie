@@ -625,12 +625,15 @@ class App {
             // Rely on proxy to add skip/take/orderby
             const data = await this.afasApi._fetchData(connector, {}); 
             
-            if (!data || !Array.isArray(data.rows)) {
-                 console.error('Invalid data structure received for sidebar projects:', data);
-                 throw new Error('Ongeldige data ontvangen voor projectenlijst.');
+            // Check if data is an array directly, or if it has a rows property which is an array
+            const rows = Array.isArray(data) ? data : (data && Array.isArray(data.rows)) ? data.rows : null;
+            
+            if (rows === null) {
+                 console.error('Invalid data structure received for sidebar projects (expected array or {rows: array}):', data);
+                 throw new Error('Ongeldige data structuur ontvangen voor projectenlijst.');
             }
             
-            this.sidebarData = data.rows; // Store raw data
+            this.sidebarData = rows; // Use the extracted rows
             this.groupedSidebarData = this.groupProjectsByLeader(this.sidebarData);
             this.renderSidebar(); // Render the actual sidebar
             console.log('Successfully fetched and rendered sidebar projects:', this.sidebarData.length);
