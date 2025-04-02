@@ -11,19 +11,21 @@ class AfasApi {
     netlifyProxyEndpoint = '/.netlify/functions/afas-proxy';
 
     async _fetchData(connector, options = {}) {
+        // Set default take value to 1000 if not specified
+        const take = options.take || 1000;
+        
         const params = new URLSearchParams();
         params.append('connector', connector);
+        params.append('take', take.toString());
 
         if (options.skip) params.append('skip', options.skip);
-        if (options.take) params.append('take', options.take);
         if (options.filterfieldids) params.append('filterfieldids', options.filterfieldids);
         if (options.filtervalues) params.append('filtervalues', options.filtervalues);
 
         const url = `${this.netlifyProxyEndpoint}?${params.toString()}`;
-        console.log(`Calling Netlify proxy: ${url}`); // Log the call to the proxy
+        console.log(`Calling Netlify proxy: ${url}`);
 
         try {
-            // Remove Authorization header - handled by Netlify function
             const response = await fetch(url, {
                 method: 'GET',
                 headers: {
@@ -34,32 +36,31 @@ class AfasApi {
             if (!response.ok) {
                 let errorData;
                 try {
-                    errorData = await response.json(); // Try to parse error body from proxy/AFAS
+                    errorData = await response.json();
                 } catch (e) {
-                    errorData = { error: await response.text() }; // Fallback to text if JSON parsing fails
+                    errorData = { error: await response.text() };
                 }
                 console.error(`Error fetching ${connector} via proxy:`, response.status, errorData);
                 throw new Error(`Failed to fetch ${connector}: ${response.status} ${response.statusText} - ${JSON.stringify(errorData)}`);
             }
 
             const data = await response.json();
-            // console.log(`Data received for ${connector}:`, data);
-            return data.rows || []; // Assuming AFAS structure with a 'rows' property
+            return data.rows || [];
         } catch (error) {
             console.error(`Network or other error fetching ${connector} via proxy:`, error);
-            throw error; // Re-throw the error to be handled by the caller
+            throw error;
         }
     }
 
     async fetchProjects() {
         const connector = 'Cursor_Voortgang_Projecten';
         console.log(`Fetching projects using connector: ${connector}`);
-        return this._fetchData(connector, { take: 1000 });
+        return this._fetchData(connector);
     }
 
     async fetchCumulativeWorkTypeData(projectCode = null) {
         const connector = 'Cursor_Voortgang_Nacalculatie_Werksoorten';
-        const options = { take: 1000 };
+        const options = {};
         if (projectCode) {
             console.log(`Fetching cumulative work type data for project ${projectCode}`);
             options.filterfieldids = 'Projectnummer';
@@ -70,10 +71,9 @@ class AfasApi {
         return this._fetchData(connector, options);
     }
 
-    // Keep fetchContractSumsAndPhases if it's still needed, update to use _fetchData
     async fetchContractSumsAndPhases(projectCode = null) {
         const connector = 'Cursor_Voortgang_Projecten_Contractsom_Fase'; 
-        const options = { take: 1000 };
+        const options = {};
         if (projectCode) {
             console.log(`Fetching contract sums and phases for project ${projectCode}`);
             options.filterfieldids = 'Projectnummer';
@@ -86,7 +86,7 @@ class AfasApi {
 
     async fetchCumulativeCostData(projectCode = null) {
         const connector = 'Cursor_Voortgang_Projecten_Cumulatieven_Kosten';
-        const options = { take: 1000 };
+        const options = {};
         if (projectCode) {
             console.log(`Fetching cumulative cost data for project ${projectCode}`);
             options.filterfieldids = 'Projectnummer';
@@ -203,25 +203,29 @@ class AfasApi {
         }
     }
 
+    async fetchProjectsForSidebar() {
+        const connector = 'Cursor_Voortgang_Projecten_per_Projectleider';
+        console.log(`Fetching sidebar projects using connector: ${connector}`);
+        return this._fetchData(connector);
+    }
+
     async createDirectInvoice(projectCode, phaseCode, amount) {
-        let response;
         try {
-            const today = new Date().toISOString().split('T')[0]; // Format: YYYY-MM-DD
+            const today = new Date().toISOString().split('T')[0];
             
-            // Payload for FbDirectInvoice with correct structure
             const data = {
                 "FbDirectInvoice": {
                     "Element": {
-                        "Fields": { // Header fields
+                        "Fields": {
                             "OrDa": today,
                             "PrId": projectCode,
                             "PrSt": phaseCode
                         },
-                        "Objects": [ // Array for line objects
+                        "Objects": [
                             {
-                                "FbDirectInvoiceLines": { // Line object type
+                                "FbDirectInvoiceLines": {
                                     "Element": {
-                                        "Fields": { // Line fields
+                                        "Fields": {
                                             "VaIt": "6",
                                             "ItCd": "TM",
                                             "BiUn": "*****",
@@ -236,47 +240,38 @@ class AfasApi {
                 }
             };
 
-            // Ensure the base URL does not end with /connectors
-            const cleanBaseUrl = this.config.baseUrl.replace(/\/connectors\/?$/, '');
-            const endpointUrl = `${this.proxyUrl}${cleanBaseUrl}/connectors/FbDirectInvoice`;
-            console.log('Calling FbDirectInvoice endpoint:', endpointUrl);
+            const url = `${this.netlifyProxyEndpoint}?connector=FbDirectInvoice`;
+            console.log('Calling FbDirectInvoice endpoint:', url);
             console.log('Sending data:', JSON.stringify(data, null, 2));
 
-            response = await fetch(endpointUrl, {
+            const response = await fetch(url, {
                 method: 'POST',
                 headers: {
-                    ...this.getHeaders(),
+                    'Accept': 'application/json',
                     'Content-Type': 'application/json'
                 },
-                mode: 'cors',
                 body: JSON.stringify(data)
             });
 
-            const responseText = await response.text(); // Read response as text first
+            const responseText = await response.text();
             console.log('FbDirectInvoice Response Status:', response.status);
             console.log('FbDirectInvoice Response Text:', responseText);
 
             if (response.ok) {
                 let responseData;
                 try {
-                    responseData = JSON.parse(responseText); // Try to parse as JSON
+                    responseData = JSON.parse(responseText);
                 } catch (jsonError) {
-                    // If parsing fails but status is OK, maybe AFAS sent non-JSON success?
-                    // Or maybe the proxy interfered?
                     console.warn('Could not parse successful response as JSON:', jsonError);
-                    // Attempt to return success without invoice number if parsing failed
                     return {
                         success: true,
                         message: 'Factuurregel succesvol verwerkt (maar factuurnummer kon niet worden gelezen)',
-                        invoiceNumber: null, 
-                        details: responseText // Return raw text for debugging
+                        invoiceNumber: null,
+                        details: responseText
                     };
                 }
 
-                // Try to find the invoice number (LiIn) - structure might vary
                 let invoiceNumber = null;
-                
-                // Check the structure seen in the latest screenshot
                 if (responseData.results && 
                     responseData.results.FbDirectInvoice && 
                     Array.isArray(responseData.results.FbDirectInvoice) && 
@@ -284,14 +279,10 @@ class AfasApi {
                     responseData.results.FbDirectInvoice[1] && 
                     responseData.results.FbDirectInvoice[1].LiIn) {
                     invoiceNumber = responseData.results.FbDirectInvoice[1].LiIn;
-                } 
-                // Keep previous checks as fallbacks
-                else if (responseData.results && responseData.results[0] && responseData.results[0].LiIn) {
+                } else if (responseData.results && responseData.results[0] && responseData.results[0].LiIn) {
                     invoiceNumber = responseData.results[0].LiIn;
                 } else if (responseData.FbDirectInvoice && responseData.FbDirectInvoice.Element && responseData.FbDirectInvoice.Element.Fields && responseData.FbDirectInvoice.Element.Fields.LiIn) {
-                     invoiceNumber = responseData.FbDirectInvoice.Element.Fields.LiIn;
-                } else {
-                     console.warn('Could not find LiIn (invoice number) in the expected location in the response:', responseData);
+                    invoiceNumber = responseData.FbDirectInvoice.Element.Fields.LiIn;
                 }
 
                 return {
@@ -301,18 +292,15 @@ class AfasApi {
                     details: responseData
                 };
             } else {
-                // Handle error response
                 let errorData = { message: `Fout ${response.status}: ${response.statusText}` };
                 try {
-                    errorData = JSON.parse(responseText); // Try parsing error JSON
+                    errorData = JSON.parse(responseText);
                 } catch (jsonError) {
                     console.warn('Could not parse error response as JSON:', jsonError);
                 }
-                // Use message from parsed JSON if available, otherwise construct one
                 const errorMessage = errorData.error?.message || errorData.message || `Onbekende fout: ${response.statusText}`;
                 throw new Error(errorMessage);
             }
-
         } catch (error) {
             console.error('Error in createDirectInvoice:', error);
             return {
@@ -321,11 +309,5 @@ class AfasApi {
                 details: error.message 
             };
         }
-    }
-
-    async fetchProjectsForSidebar() {
-        const connector = 'Cursor_Voortgang_Projecten_per_Projectleider';
-        console.log(`Fetching sidebar projects using connector: ${connector}`);
-        return this._fetchData(connector, { take: 1000 }); 
     }
 } 
