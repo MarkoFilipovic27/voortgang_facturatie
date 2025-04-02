@@ -28,8 +28,10 @@ exports.handler = async function(event, context) {
         });
 
         // Construct the URL with proper path components
+        const servicePath = 'ProfitRestServices';
+        const fullBaseUrl = `${baseUrl.replace(/\/$/, '')}/${servicePath}`;
         const connectorPath = 'connectors';
-        const url = `${baseUrl}/${connectorPath}/${encodeURIComponent(connector)}`;
+        const url = `${fullBaseUrl}/${connectorPath}/${encodeURIComponent(connector)}`;
 
         // Add default parameters if not provided
         const queryParams = {
