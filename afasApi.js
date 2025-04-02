@@ -173,6 +173,20 @@ class AfasApi {
         return this._fetchData(connector, options);
     }
 
+    async fetchProjectCumulativeWorkTypes(projectCode = null) {
+        const connector = 'Cursor_Voortgang_Projecten_Cumulatieven_Werksoort';
+        const options = {};
+        if (projectCode) {
+            console.log(`Fetching project cumulative work types for project ${projectCode}`);
+            options.filterfieldids = 'Projectnummer';
+            options.filtervalues = projectCode;
+            options.operatortypes = '1';
+        } else {
+            console.log('Fetching all project cumulative work types');
+        }
+        return this._fetchData(connector, options);
+    }
+
     async createDirectInvoice(projectCode, phaseCode, amount) {
         try {
             const today = new Date().toISOString().split('T')[0];
