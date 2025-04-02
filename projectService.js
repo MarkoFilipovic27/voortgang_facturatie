@@ -117,33 +117,31 @@ class ProjectService {
             }
         });
 
-        // Process cumulative work type data
-        console.log('Processing Cumulative Work Type rows...', workTypeRowsArray);
+        // Process cumulative work type data to update phase actual work type costs
+        console.log('Processing Cumulative Work Type rows (for actual costs)...', workTypeRowsArray);
         console.log(`Number of Cumulative Work Type Rows: ${workTypeRowsArray.length}`);
         workTypeRowsArray.forEach(row => {
              let projectCode = row.Projectnummer;
-            if (!projectCode) {
-                console.warn(`Cumulative Work Type Row - Skipping due to missing Projectnummer`);
+             const phaseCode = row.Projectfase; // Assuming Projectfase exists here too
+             const workTypeCostAmount = parseFloat(row.Kostprijsbedrag) || 0; // Use Kostprijsbedrag
+
+            if (!projectCode || !phaseCode) {
+                // console.warn(`Cumulative Work Type Row - Skipping due to missing Projectnummer or Projectfase`, row);
                 return;
             }
+
+            if (workTypeCostAmount === 0) return; // Skip zero amounts
+            
             const lookupKey = String(projectCode).trim(); 
             const project = projectMap.get(lookupKey); 
-            console.log(`Cumulative Work Type Row - Project found in map for key '${lookupKey}'?`, project ? 'Yes' : 'No');
+            // console.log(`Cumulative Work Type Row - Project found in map for key '${lookupKey}'?`, project ? 'Yes' : 'No');
             
-            if (project) {
-                // Ensure array exists (redundant due to initialization, but safe)
-                if (!project.cumulativeWorkTypes) project.cumulativeWorkTypes = []; 
-
-                project.cumulativeWorkTypes.push({
-                    itemCode: row.Itemcode, 
-                    itemDescription: row.Item_omschrijving, 
-                    budgetHours: parseFloat(row.Aantal_uren_voorcalculatie) || 0, 
-                    actualHours: parseFloat(row.Aantal_uren_nacalculatie) || 0, 
-                    budgetCosts: parseFloat(row.Totaal_kostprijs_voorcalculatie) || 0, 
-                    actualCosts: parseFloat(row.Totaal_kostprijs_nacalculatie) || 0 
-                });
+            if (project && project.phases.has(phaseCode)) {
+                const phase = project.phases.get(phaseCode);
+                // console.log(`Adding actual work type cost ${workTypeCostAmount} to Project ${projectCode}, Phase ${phaseCode}. Current: ${phase.actualWorkTypes}`);
+                phase.actualWorkTypes += workTypeCostAmount; // Add work type cost to phase total
             } else {
-                console.warn(`Cumulative work type row found for project ${projectCode} not in base structure:`, row);
+                // console.warn(`Cumulative work type row found for project ${projectCode}, phase ${phaseCode} not in base structure or phase map:`, row);
             }
         });
         
