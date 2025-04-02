@@ -56,15 +56,23 @@ class ProjectService {
 
     transformData(baseRows, cumulativeWorkTypeRows, cumulativeCostRows) { // Added cumulativeCostRows
         console.log('Starting data transformation...');
-        console.log('Input Base Rows:', baseRows);
-        console.log('Input Cumulative Work Type Rows:', cumulativeWorkTypeRows);
-        console.log('Input Cumulative Cost Rows:', cumulativeCostRows); // Log input cost rows
+        
+        // Ensure we're working with arrays
+        const baseRowsArray = Array.isArray(baseRows) ? baseRows : (baseRows?.rows || []);
+        const workTypeRowsArray = Array.isArray(cumulativeWorkTypeRows) ? cumulativeWorkTypeRows : (cumulativeWorkTypeRows?.rows || []);
+        const costRowsArray = Array.isArray(cumulativeCostRows) ? cumulativeCostRows : (cumulativeCostRows?.rows || []);
+
+        console.log('Processed arrays lengths:', {
+            base: baseRowsArray.length,
+            workTypes: workTypeRowsArray.length,
+            costs: costRowsArray.length
+        });
 
         // Create a map of projects for efficient lookup
         const projectMap = new Map();
 
         // Process base phase data first to initialize projects
-        baseRows.forEach(row => {
+        baseRowsArray.forEach(row => {
             const projectCode = row.Projectnummer;
             const phaseCode = row.Projectfase;
             const projectDescription = row.Project_omschrijving;
@@ -103,9 +111,9 @@ class ProjectService {
         });
 
         // Process cumulative work type data
-        console.log('Processing Cumulative Work Type rows...', cumulativeWorkTypeRows);
-        console.log(`Number of Cumulative Work Type Rows: ${cumulativeWorkTypeRows.length}`);
-        cumulativeWorkTypeRows.forEach(row => {
+        console.log('Processing Cumulative Work Type rows...', workTypeRowsArray);
+        console.log(`Number of Cumulative Work Type Rows: ${workTypeRowsArray.length}`);
+        workTypeRowsArray.forEach(row => {
              let projectCode = row.Projectnummer;
             if (!projectCode) {
                 console.warn(`Cumulative Work Type Row - Skipping due to missing Projectnummer`);
@@ -133,9 +141,9 @@ class ProjectService {
         });
         
         // NEW: Process cumulative cost data (Uncommented and adjusted)
-        console.log('Processing Cumulative Cost rows...', cumulativeCostRows);
-        console.log(`Number of Cumulative Cost Rows: ${cumulativeCostRows.length}`);
-        cumulativeCostRows.forEach(row => {
+        console.log('Processing Cumulative Cost rows...', costRowsArray);
+        console.log(`Number of Cumulative Cost Rows: ${costRowsArray.length}`);
+        costRowsArray.forEach(row => {
             let projectCode = row.Projectnummer; 
             if (!projectCode) {
                 console.warn(`Cumulative Cost Row - Skipping due to missing Projectnummer field`);
