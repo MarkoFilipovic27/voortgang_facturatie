@@ -23,21 +23,16 @@ class App {
             this.showSidebarLoading();
             this.showMainContentLoading(); // Show loading in main area initially
 
-            // // Fetch sidebar data first - OLD WAY
-            // this.sidebarData = await this.afasApi.fetchProjectsForSidebar();
-            // this.groupedSidebarData = this.groupProjectsByLeader(this.sidebarData);
-            // this.renderSidebar();
-            
-            // Call the local test function instead
+            // Fetch sidebar data (using the restored fetchSidebarProjects)
             await this.fetchSidebarProjects();
 
-            // Initially, don't load any specific project data
+            // Initially, show the select project message
             this.showSelectProjectMessage(); 
 
         } catch (error) {
-            this.showSidebarError('Fout bij laden projectlijst.');
-            this.showMainContentError('Kan project niet laden.');
-            console.error(error);
+            // Errors from fetchSidebarProjects are handled within that function (showSidebarError)
+            this.showMainContentError('Kan project niet laden vanwege fout in sidebar.');
+            console.error("Error during init, likely from sidebar fetch:", error);
         }
         console.log('--- App.init() finished ---');
     }
@@ -622,21 +617,27 @@ class App {
         }
     }
 
-    // Fetch project data for the sidebar - TEMPORARILY USING DIFFERENT CONNECTOR FOR TEST
+    // Fetch project data for the sidebar
     async fetchSidebarProjects() {
-        // const originalConnector = 'Cursor_Voortgang_Projecten_per_projectleider';
-        const testConnector = 'Cursor_Voortgang_Factuurtermijnen'; // Connector to test
-        console.log(`TESTING sidebar fetch with connector: ${testConnector}`); 
+        const connector = 'Cursor_Voortgang_Projecten_per_projectleider'; // Original connector
+        console.log(`Fetching sidebar projects using connector: ${connector}`); 
         try {
-            // Call _fetchData without specific parameters for this test
-            const data = await this.afasApi._fetchData(testConnector, {}); 
-            console.log(`SUCCESSFULLY fetched TEST connector ${testConnector}:`, data); // Log entire data object
-            // this.projects = data.rows; // Don't try to process rows for this test
-            // this.renderSidebar(); // Don't render sidebar for this test
-            document.getElementById('sidebar-content').innerHTML = `<p class="text-green-500">Test connector ${testConnector} fetched successfully! Check console.</p>`;
+            // Rely on proxy to add skip/take/orderby
+            const data = await this.afasApi._fetchData(connector, {}); 
+            
+            if (!data || !Array.isArray(data.rows)) {
+                 console.error('Invalid data structure received for sidebar projects:', data);
+                 throw new Error('Ongeldige data ontvangen voor projectenlijst.');
+            }
+            
+            this.sidebarData = data.rows; // Store raw data
+            this.groupedSidebarData = this.groupProjectsByLeader(this.sidebarData);
+            this.renderSidebar(); // Render the actual sidebar
+            console.log('Successfully fetched and rendered sidebar projects:', this.sidebarData.length);
+            
         } catch (error) {
-            console.error(`FAILED to fetch TEST connector ${testConnector}:`, error);
-            document.getElementById('sidebar-content').innerHTML = `<p class="text-red-500">Error loading test connector ${testConnector}. Check console.</p>`;
+            console.error('Failed to fetch sidebar projects:', error);
+            this.showSidebarError('Fout bij laden projectlijst.'); 
         }
     }
 }
