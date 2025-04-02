@@ -8,6 +8,8 @@ exports.handler = async (event, context) => {
 
     console.log('Environment check:', {
         hasToken: !!afasToken,
+        tokenStart: afasToken ? afasToken.substring(0, 10) : 'N/A',
+        tokenEnd: afasToken ? afasToken.substring(afasToken.length - 10) : 'N/A',
         hasBaseUri: !!baseUri,
         baseUri: baseUri ? baseUri.replace(/token/gi, '[hidden]') : undefined
     });
