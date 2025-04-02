@@ -12,43 +12,43 @@ class ProjectService {
             throw new Error("fetchProjectData requires a projectCode when fetching details.");
         }
         try {
-            // Fetch all data in parallel: base phases, nacalc work types, actual costs, invoice terms, AND project cumulative work types
-            const [baseData, nacalcWorkTypeData, actualCostData, invoiceTermData, projCumulativeWorkTypeData] = await Promise.all([
+            // Fetch all data in parallel: base phases, cumulative work types, cumulative costs, and invoice terms
+            const [baseData, cumulativeWorkTypeData, cumulativeCostData, invoiceTermData] = await Promise.all([
                 this.afasApi.fetchBaseProjectAndPhases(projectCode), 
-                this.afasApi.fetchCumulativeWorkTypeData(projectCode), // Gets nacalc work types for phase totals
-                this.afasApi.fetchActualCosts(projectCode),   
-                this.afasApi.fetchInvoiceTerms(projectCode), 
-                this.afasApi.fetchProjectCumulativeWorkTypes(projectCode) // Gets project cumulative work types for details section
+                this.afasApi.fetchCumulativeWorkTypeData(projectCode), // Gets cumulative work types for bars
+                this.afasApi.fetchCumulativeCostData(projectCode),   // Gets cumulative costs for bars
+                this.afasApi.fetchInvoiceTerms(projectCode) 
+                // Removed: this.afasApi.fetchProjectCumulativeWorkTypes(projectCode) 
             ]);
 
             // Log raw data
             console.log('Raw Base Project/Phases:', baseData);
-            console.log('Raw Nacalc Work Types:', nacalcWorkTypeData); // Renamed log
-            console.log('Raw Actual Costs:', actualCostData); 
+            console.log('Raw Cumulative Work Types:', cumulativeWorkTypeData); // Renamed log back
+            console.log('Raw Cumulative Costs:', cumulativeCostData); // Renamed log back
             console.log('Raw Invoice Terms:', invoiceTermData); 
-            console.log('Raw Project Cumulative Work Types:', projCumulativeWorkTypeData); // Log new data
+            // Removed log for projCumulativeWorkTypeData
 
             // Extract the rows array if the data is in {rows: [...]} format
             const baseRowsArg = (baseData && baseData.rows) ? baseData.rows : (Array.isArray(baseData) ? baseData : []); 
-            const nacalcWorkTypeRowsArg = (nacalcWorkTypeData && nacalcWorkTypeData.rows) ? nacalcWorkTypeData.rows : (Array.isArray(nacalcWorkTypeData) ? nacalcWorkTypeData : []); // Renamed variable
-            const actualCostRowsArg = (actualCostData && actualCostData.rows) ? actualCostData.rows : (Array.isArray(actualCostData) ? actualCostData : []); 
+            const cumulativeWorkTypeRowsArg = (cumulativeWorkTypeData && cumulativeWorkTypeData.rows) ? cumulativeWorkTypeData.rows : (Array.isArray(cumulativeWorkTypeData) ? cumulativeWorkTypeData : []); // Renamed variable back
+            const cumulativeCostRowsArg = (cumulativeCostData && cumulativeCostData.rows) ? cumulativeCostData.rows : (Array.isArray(cumulativeCostData) ? cumulativeCostData : []); // Renamed variable back
             const invoiceTermRowsArg = (invoiceTermData && invoiceTermData.rows) ? invoiceTermData.rows : (Array.isArray(invoiceTermData) ? invoiceTermData : []); 
-            const projCumulativeWorkTypeRowsArg = (projCumulativeWorkTypeData && projCumulativeWorkTypeData.rows) ? projCumulativeWorkTypeData.rows : (Array.isArray(projCumulativeWorkTypeData) ? projCumulativeWorkTypeData : []); // Extract new data rows
+            // Removed projCumulativeWorkTypeRowsArg
 
             // Check lengths before transforming
             console.log(`CHECK baseRowsArg length: ${baseRowsArg.length}`);
-            console.log(`CHECK nacalcWorkTypeRowsArg length: ${nacalcWorkTypeRowsArg.length}`); // Renamed variable
-            console.log(`CHECK actualCostRowsArg length: ${actualCostRowsArg.length}`); 
+            console.log(`CHECK cumulativeWorkTypeRowsArg length: ${cumulativeWorkTypeRowsArg.length}`); // Renamed variable back
+            console.log(`CHECK cumulativeCostRowsArg length: ${cumulativeCostRowsArg.length}`); // Renamed variable back
             console.log(`CHECK invoiceTermRowsArg length: ${invoiceTermRowsArg.length}`); 
-            console.log(`CHECK projCumulativeWorkTypeRowsArg length: ${projCumulativeWorkTypeRowsArg.length}`); // Log length of new data
+            // Removed log for projCumulativeWorkTypeRowsArg length
 
             // Transform the fetched data
             const transformedData = this.transformData(
                 baseRowsArg,         
-                nacalcWorkTypeRowsArg,   // Renamed variable
-                actualCostRowsArg, 
-                invoiceTermRowsArg,   
-                projCumulativeWorkTypeRowsArg // Pass new data
+                cumulativeWorkTypeRowsArg,   // Renamed variable back
+                cumulativeCostRowsArg, // Renamed variable back
+                invoiceTermRowsArg   
+                // Removed projCumulativeWorkTypeRowsArg
             );
 
             return transformedData;
@@ -58,22 +58,22 @@ class ProjectService {
         }
     }
 
-    transformData(baseRows, nacalcWorkTypeRows, actualCostRows, invoiceTermRows, projCumulativeWorkTypeRows) { // Added projCumulativeWorkTypeRows
+    transformData(baseRows, cumulativeWorkTypeRows, cumulativeCostRows, invoiceTermRows) { // Reverted parameters
         console.log('Starting data transformation...');
         
         // Ensure we're working with arrays
         const baseRowsArray = Array.isArray(baseRows) ? baseRows : (baseRows?.rows || []);
-        const nacalcWorkTypeRowsArray = Array.isArray(nacalcWorkTypeRows) ? nacalcWorkTypeRows : (nacalcWorkTypeRows?.rows || []); // Renamed variable
-        const actualCostRowsArray = Array.isArray(actualCostRows) ? actualCostRows : (actualCostRows?.rows || []); 
+        const cumulativeWorkTypeRowsArray = Array.isArray(cumulativeWorkTypeRows) ? cumulativeWorkTypeRows : (cumulativeWorkTypeRows?.rows || []); // Renamed variable back
+        const cumulativeCostRowsArray = Array.isArray(cumulativeCostRows) ? cumulativeCostRows : (cumulativeCostRows?.rows || []); // Renamed variable back
         const invoiceTermRowsArray = Array.isArray(invoiceTermRows) ? invoiceTermRows : (invoiceTermRows?.rows || []); 
-        const projCumulativeWorkTypeRowsArray = Array.isArray(projCumulativeWorkTypeRows) ? projCumulativeWorkTypeRows : (projCumulativeWorkTypeRows?.rows || []); // Ensure new data is array
+        // Removed projCumulativeWorkTypeRowsArray
 
         console.log('Processed arrays lengths:', {
             base: baseRowsArray.length,
-            nacalcWorkTypes: nacalcWorkTypeRowsArray.length, // Renamed key
-            costs: actualCostRowsArray.length, 
-            invoiceTerms: invoiceTermRowsArray.length, 
-            projCumulativeWorkTypes: projCumulativeWorkTypeRowsArray.length // Log length
+            cumulativeWorkTypes: cumulativeWorkTypeRowsArray.length, // Renamed key back
+            cumulativeCosts: cumulativeCostRowsArray.length, // Renamed key back
+            invoiceTerms: invoiceTermRowsArray.length 
+            // Removed projCumulativeWorkTypes key
         });
 
         // Create a map of projects for efficient lookup
@@ -97,9 +97,9 @@ class ProjectService {
                     projectCode: projectCode,
                     projectDescription: projectDescription || 'Onbekende Projectomschrijving',
                     phases: new Map(),
-                    detailedWorkTypes: [] // Initialize array for detailed work types
-                    // cumulativeWorkTypes: [], // No longer needed
-                    // cumulativeCosts: [] // No longer needed here, handled in phase totals
+                    cumulativeWorkTypes: [], // Restored array for work type bars
+                    cumulativeCosts: [] // Restored array for cost bars
+                    // detailedWorkTypes: [] // Removed
                 };
                 projectMap.set(projectCode, project);
             }
@@ -119,66 +119,74 @@ class ProjectService {
             }
         });
 
-        // Process nacalc work type data to update phase actual work type costs
-        console.log('Processing Nacalc Work Type rows (for phase totals)...', nacalcWorkTypeRowsArray); // Updated log message
-        console.log(`Number of Nacalc Work Type Rows: ${nacalcWorkTypeRowsArray.length}`); // Updated log message
-        nacalcWorkTypeRowsArray.forEach(row => { // Renamed variable
+        // Process cumulative work type data for bars
+        console.log('Processing Cumulative Work Type rows (for bars)...', cumulativeWorkTypeRowsArray); // Updated log
+        console.log(`Number of Cumulative Work Type Rows: ${cumulativeWorkTypeRowsArray.length}`); // Updated log
+        cumulativeWorkTypeRowsArray.forEach(row => { // Renamed variable back
              let projectCode = row.Projectnummer;
-             const phaseCode = row.Projectfase; // Assuming Projectfase exists here too
-             const workTypeCostAmount = parseFloat(row.Kostprijsbedrag) || 0; // Use Kostprijsbedrag
+             // Removed phaseCode and costAmount logic for phase totals
 
-            if (!projectCode || !phaseCode) {
-                // console.warn(`Cumulative Work Type Row - Skipping due to missing Projectnummer or Projectfase`, row);
+            if (!projectCode) {
+                console.warn(`Cumulative Work Type Row - Skipping due to missing Projectnummer`, row);
                 return;
             }
-
-            if (workTypeCostAmount === 0) return; // Skip zero amounts
             
             const lookupKey = String(projectCode).trim(); 
             const project = projectMap.get(lookupKey); 
-            // console.log(`Cumulative Work Type Row - Project found in map for key '${lookupKey}'?`, project ? 'Yes' : 'No');
             
-            if (project && project.phases.has(phaseCode)) {
-                const phase = project.phases.get(phaseCode);
-                // console.log(`Adding actual work type cost ${workTypeCostAmount} to Project ${projectCode}, Phase ${phaseCode}. Current: ${phase.actualWorkTypes}`);
-                phase.actualWorkTypes += workTypeCostAmount; // Add work type cost to phase total
+            if (project) {
+                // Restore pushing data for bars
+                if (!project.cumulativeWorkTypes) project.cumulativeWorkTypes = []; 
+                
+                // Debugging om de exacte veldnamen te zien
+                console.log('Raw work type row:', row);
+                
+                project.cumulativeWorkTypes.push({
+                    itemCode: row.Itemcode, 
+                    itemDescription: row.Item_omschrijving, 
+                    budgetHours: parseFloat(row.Aantal_uren_voorcalculatie) || 0, 
+                    actualHours: parseFloat(row.Aantal_uren_nacalculatie) || 0,
+                    budgetCosts: parseFloat(row.Totaal_kostprijs_voorcalculatie) || 0, 
+                    actualCosts: parseFloat(row.Totaal_kostprijs_nacalculatie) || 0,
+                    // Extra debug info om veldnamen te controleren
+                    _debug_budgetHours: row.Aantal_uren_voorcalculatie,
+                    _debug_actualHours: row.Aantal_uren_nacalculatie
+                });
             } else {
-                // console.warn(`Cumulative work type row found for project ${projectCode}, phase ${phaseCode} not in base structure or phase map:`, row);
+                console.warn(`Cumulative work type row found for project ${projectCode} not in base structure:`, row);
             }
         });
-        
-        // Process project cumulative work type data for the details section
-        console.log('Processing Project Cumulative Work Type rows (for details section)...', projCumulativeWorkTypeRowsArray);
-        projCumulativeWorkTypeRowsArray.forEach(row => {
-            const projectCode = row.Projectnummer;
+
+        // Process cumulative cost data for bars
+        console.log('Processing Cumulative Cost rows (for bars)...', cumulativeCostRowsArray); // Updated log
+        cumulativeCostRowsArray.forEach(row => {
+            const projectCode = row.Projectnummer; 
+            // Removed phaseCode and costAmount logic for phase totals
             if (!projectCode) {
-                console.warn(`Project Cumulative Work Type Row - Skipping due to missing Projectnummer`, row);
+                console.warn(`Cumulative Cost Row - Skipping due to missing Projectnummer`, row);
                 return;
             }
-            const lookupKey = String(projectCode).trim();
+            const lookupKey = String(projectCode).trim(); 
             const project = projectMap.get(lookupKey);
 
             if (project) {
-                // Ensure array exists
-                if (!project.detailedWorkTypes) project.detailedWorkTypes = [];
-                
-                project.detailedWorkTypes.push({
-                    itemCode: row.Itemcode,
-                    itemDescription: row.Item_omschrijving,
-                    budgetHours: parseFloat(row.Aantal_uren_voorcalculatie) || 0,
-                    budgetCosts: parseFloat(row.Totaal_kostprijs_voorcalculatie) || 0,
-                    actualHours: parseFloat(row.Aantal_uren_nacalculatie) || 0,
-                    actualCosts: parseFloat(row.Totaal_kostprijs_nacalculatie) || 0,
-                    diffHours: parseFloat(row['Verschil_aantal_uren_voor-_nacalculatie']) || 0, // Accessing field with special chars
-                    diffCosts: parseFloat(row['Verschil_kostprijs_voor-_nacalculatie']) || 0 // Accessing field with special chars
+                 // Restore pushing data for bars
+                if (!project.cumulativeCosts) project.cumulativeCosts = []; 
+                project.cumulativeCosts.push({
+                    itemCode: row.KOSTENSOORT || 'N/A', // Use field from this connector
+                    itemDescription: row.Omschrijving_kostensoort || 'Geen omschrijving', // Use field from this connector
+                    budgetCosts: parseFloat(row.Budget_kosten) || 0,      // Use field from this connector
+                    actualCosts: parseFloat(row.Nacalculatie_kosten) || 0 // Use field from this connector
                 });
             } else {
-                console.warn(`Project cumulative work type row found for project ${projectCode} not in base structure:`, row);
+                 console.warn(`Cumulative cost row found for project ${projectCode} not in base structure:`, row);
             }
         });
+
+        // Removed processing for detailedWorkTypes
         
-        // Process actual cost data to update phase actual costs
-        console.log('Processing Actual Cost rows...', actualCostRowsArray);
+        // Process actual cost data to update phase actual costs (KEEP THIS PART for the main table)
+        console.log('Processing Actual Cost rows (for phase totals)...', actualCostRowsArray); // Log message adjusted
         actualCostRowsArray.forEach(row => {
             const projectCode = row.Projectnummer; 
             const phaseCode = row.Projectfase; // Assuming Projectfase exists here too

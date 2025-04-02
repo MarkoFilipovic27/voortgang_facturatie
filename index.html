@@ -31,6 +31,15 @@
             width: var(--progress-width, 0%); /* Set width using the variable, default to 0% */
             transition: width 0.5s ease-out; /* Add transition for width property */
         }
+        
+        /* Extra debug CSS om zeker te weten dat de balk zichtbaar is */
+        .progress-bar-inner::after {
+            content: attr(style);
+            position: absolute;
+            right: 10px;
+            color: black;
+            font-size: 10px;
+        }
     </style>
 </head>
 <body class="bg-slate-100">
