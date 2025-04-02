@@ -15,6 +15,12 @@ exports.handler = async function(event, context) {
             throw new Error('AFAS_TOKEN environment variable is not set');
         }
 
+        // Get base URL from environment variable
+        const baseUrl = process.env.AFAS_BASE_URL;
+        if (!baseUrl) {
+            throw new Error('AFAS_BASE_URL environment variable is not set');
+        }
+
         console.log('Token format verification:', {
             length: token.length,
             startsWithBasic: token.startsWith('Basic '),
@@ -22,7 +28,6 @@ exports.handler = async function(event, context) {
         });
 
         // Construct the URL with proper path components
-        const baseUrl = 'https://31219.rest.afas.online/ProfitRestServices';
         const connectorPath = 'connectors';
         const url = `${baseUrl}/${connectorPath}/${encodeURIComponent(connector)}`;
 
