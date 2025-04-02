@@ -371,10 +371,10 @@ class App {
                 <span class="w-48 pr-2 text-sm font-semibold text-slate-600">Totaal</span>
                 <div class="flex-1 mx-4">
                     <div class="w-full bg-slate-200 rounded-full h-4 relative">
-                        <div class="progress-bar-inner bg-blue-600 hover:bg-blue-700 h-4 rounded-full flex items-center ${totalProgress < 30 ? 'justify-end pr-1' : 'justify-start pl-2'} text-xs" style="width: ${totalProgress}%;">
-                            ${totalProgress < 30 ? '' : (totalActual > 0 ? `<span class="text-white font-medium">${isUren ? totalActual.toLocaleString() : '€' + totalActual.toLocaleString()}</span>` : '')}
+                        <div class="progress-bar-inner bg-blue-600 hover:bg-blue-700 h-4 rounded-full" style="width: ${totalProgress}%"></div>
+                        <div class="absolute inset-0 flex items-center justify-start px-2">
+                            <span class="text-xs font-bold text-white drop-shadow-sm">${isUren ? totalActual.toLocaleString() : '€' + totalActual.toLocaleString()}</span>
                         </div>
-                        ${totalProgress < 30 && totalActual > 0 ? `<span class="absolute left-2 top-0 bottom-0 flex items-center text-xs font-medium text-slate-800">${isUren ? totalActual.toLocaleString() : '€' + totalActual.toLocaleString()}</span>` : ''}
                     </div>
                 </div>
                 <span class="w-20 text-sm text-right text-slate-600 font-medium">
@@ -394,10 +394,10 @@ class App {
                     <span class="w-48 pr-2 text-sm text-slate-600 truncate" title="${labelText}">${labelText}</span>
                     <div class="flex-1 mx-4">
                         <div class="w-full bg-slate-200 rounded-full h-4 relative">
-                            <div class="progress-bar-inner bg-blue-600 hover:bg-blue-700 h-4 rounded-full flex items-center ${progressPercent < 30 ? 'justify-end pr-1' : 'justify-start pl-2'} text-xs" style="width: ${progressPercent}%;">
-                                ${progressPercent < 30 ? '' : (actual > 0 ? `<span class="text-white font-medium">${isUren ? actual.toLocaleString() : '€' + actual.toLocaleString()}</span>` : '')}
+                            <div class="progress-bar-inner bg-blue-600 hover:bg-blue-700 h-4 rounded-full" style="width: ${progressPercent}%"></div>
+                            <div class="absolute inset-0 flex items-center justify-start px-2">
+                                <span class="text-xs font-bold text-white drop-shadow-sm">${isUren ? actual.toLocaleString() : '€' + actual.toLocaleString()}</span>
                             </div>
-                            ${progressPercent < 30 && actual > 0 ? `<span class="absolute left-2 top-0 bottom-0 flex items-center text-xs font-medium text-slate-800">${isUren ? actual.toLocaleString() : '€' + actual.toLocaleString()}</span>` : ''}
                         </div>
                     </div>
                     <span class="w-20 text-sm text-right text-slate-600 font-medium">
@@ -426,10 +426,10 @@ class App {
                 <span class="w-48 pr-2 text-sm font-semibold text-slate-600">Totaal</span>
                 <div class="flex-1 mx-4">
                     <div class="w-full bg-slate-200 rounded-full h-4 relative">
-                        <div class="progress-bar-inner bg-purple-600 hover:bg-purple-700 h-4 rounded-full flex items-center ${totalProgress < 30 ? 'justify-end pr-1' : 'justify-start pl-2'} text-xs" style="width: ${totalProgress}%;">
-                            ${totalProgress < 30 ? '' : (totalActual > 0 ? `<span class="text-white font-medium">€${totalActual.toLocaleString()}</span>` : '')}
+                        <div class="progress-bar-inner bg-purple-600 hover:bg-purple-700 h-4 rounded-full" style="width: ${totalProgress}%"></div>
+                        <div class="absolute inset-0 flex items-center justify-start px-2">
+                            <span class="text-xs font-bold text-white drop-shadow-sm">€${totalActual.toLocaleString()}</span>
                         </div>
-                        ${totalProgress < 30 && totalActual > 0 ? `<span class="absolute left-2 top-0 bottom-0 flex items-center text-xs font-medium text-slate-800">€${totalActual.toLocaleString()}</span>` : ''}
                     </div>
                 </div>
                 <span class="w-20 text-sm text-right text-slate-600 font-medium">
@@ -449,10 +449,10 @@ class App {
                     <span class="w-48 pr-2 text-sm text-slate-600 truncate" title="${labelText}">${labelText}</span>
                     <div class="flex-1 mx-4">
                         <div class="w-full bg-slate-200 rounded-full h-4 relative">
-                            <div class="progress-bar-inner bg-purple-600 hover:bg-purple-700 h-4 rounded-full flex items-center ${progressPercent < 30 ? 'justify-end pr-1' : 'justify-start pl-2'} text-xs" style="width: ${progressPercent}%;">
-                                ${progressPercent < 30 ? '' : (actual > 0 ? `<span class="text-white font-medium">€${actual.toLocaleString()}</span>` : '')}
+                            <div class="progress-bar-inner bg-purple-600 hover:bg-purple-700 h-4 rounded-full" style="width: ${progressPercent}%"></div>
+                            <div class="absolute inset-0 flex items-center justify-start px-2">
+                                <span class="text-xs font-bold text-white drop-shadow-sm">€${actual.toLocaleString()}</span>
                             </div>
-                            ${progressPercent < 30 && actual > 0 ? `<span class="absolute left-2 top-0 bottom-0 flex items-center text-xs font-medium text-slate-800">€${actual.toLocaleString()}</span>` : ''}
                         </div>
                     </div>
                     <span class="w-20 text-sm text-right text-slate-600 font-medium">
@@ -537,14 +537,32 @@ class App {
     }
     
     async processAndNavigateNext() {
-        if (!this.selectedProjectCode) return;
+        if (!this.selectedProjectCode) {
+            console.error('Geen project geselecteerd!');
+            return;
+        }
         
-        console.log('Processing progress before navigating...');
-        // Assuming handleSubmitProgress handles its own loading/success/error messages
-        await this.handleSubmitProgress(this.selectedProjectCode);
-        
-        console.log('Navigating to next project...');
-        await this.navigateTo('next');
+        try {
+            console.log('Processing progress before navigating...');
+            // Assuming handleSubmitProgress handles its own loading/success/error messages
+            await this.handleSubmitProgress(this.selectedProjectCode);
+            
+            console.log('Navigating to next project...');
+            const nextProjectCode = this.findNeighbourProject('next');
+            console.log(`Next project found: ${nextProjectCode}`);
+            
+            if (!nextProjectCode) {
+                console.log('Er is geen volgend project in deze lijst.');
+                this.showNotification('Er is geen volgend project in deze lijst.', 'info', 3000);
+                return;
+            }
+            
+            await this.selectProject(nextProjectCode);
+            console.log(`Navigated to next project: ${nextProjectCode}`);
+        } catch (error) {
+            console.error('Fout bij het navigeren naar het volgende project:', error);
+            this.showNotification(`Fout bij het navigeren: ${error.message}`, 'error', 5000);
+        }
     }
     
     // Add missing setCumulativeViewMode function
