@@ -12,12 +12,12 @@ class ProjectService {
             throw new Error("fetchProjectData requires a projectCode when fetching details.");
         }
         try {
-            // Fetch all data in parallel: base phases, work types, costs, and invoice terms
-            const [baseData, cumulativeWorkTypeData, cumulativeCostData, invoiceTermData] = await Promise.all([
-                this.afasApi.fetchBaseProjectAndPhases(projectCode), // Correct function for base structure
+            // Fetch all data in parallel: base phases, work types, ACTUAL costs, and invoice terms
+            const [baseData, cumulativeWorkTypeData, actualCostData, invoiceTermData] = await Promise.all([
+                this.afasApi.fetchBaseProjectAndPhases(projectCode), 
                 this.afasApi.fetchCumulativeWorkTypeData(projectCode),
-                this.afasApi.fetchCumulativeCostData(projectCode),   // Fetch cost data
-                this.afasApi.fetchInvoiceTerms(projectCode) // Fetch invoice term data (contract sums)
+                this.afasApi.fetchActualCosts(projectCode),   // Fetch ACTUAL cost data per cost type
+                this.afasApi.fetchInvoiceTerms(projectCode) 
             ]);
 
             // Log raw data
@@ -27,29 +27,29 @@ class ProjectService {
             console.log('Raw Cumulative Work Types:', cumulativeWorkTypeData);
             console.log('Raw Cumulative Work Types type:', typeof cumulativeWorkTypeData);
             console.log('Raw Cumulative Work Types structure:', cumulativeWorkTypeData ? Object.keys(cumulativeWorkTypeData) : 'null');
-            console.log('Raw Cumulative Costs:', cumulativeCostData);
-            console.log('Raw Cumulative Costs type:', typeof cumulativeCostData);
-            console.log('Raw Cumulative Costs structure:', cumulativeCostData ? Object.keys(cumulativeCostData) : 'null');
-            console.log('Raw Invoice Terms:', invoiceTermData); // Log raw invoice term data
+            console.log('Raw Actual Costs:', actualCostData); // Log raw actual cost data
+            console.log('Raw Cumulative Costs type:', typeof actualCostData);
+            console.log('Raw Cumulative Costs structure:', actualCostData ? Object.keys(actualCostData) : 'null');
+            console.log('Raw Invoice Terms:', invoiceTermData); 
 
             // Extract the rows array if the data is in {rows: [...]} format
             const baseRowsArg = (baseData && baseData.rows) ? baseData.rows : (Array.isArray(baseData) ? baseData : []); 
             const cumulativeRowsArg = (cumulativeWorkTypeData && cumulativeWorkTypeData.rows) ? cumulativeWorkTypeData.rows : (Array.isArray(cumulativeWorkTypeData) ? cumulativeWorkTypeData : []); 
-            const cumulativeCostRowsArg = (cumulativeCostData && cumulativeCostData.rows) ? cumulativeCostData.rows : (Array.isArray(cumulativeCostData) ? cumulativeCostData : []); 
-            const invoiceTermRowsArg = (invoiceTermData && invoiceTermData.rows) ? invoiceTermData.rows : (Array.isArray(invoiceTermData) ? invoiceTermData : []); // Extract invoice term rows
+            const actualCostRowsArg = (actualCostData && actualCostData.rows) ? actualCostData.rows : (Array.isArray(actualCostData) ? actualCostData : []); // Extract actual cost rows
+            const invoiceTermRowsArg = (invoiceTermData && invoiceTermData.rows) ? invoiceTermData.rows : (Array.isArray(invoiceTermData) ? invoiceTermData : []); 
 
             // Check lengths before transforming
             console.log(`CHECK baseRowsArg length: ${baseRowsArg.length}`);
             console.log(`CHECK cumulativeRowsArg length: ${cumulativeRowsArg.length}`);
-            console.log(`CHECK cumulativeCostRowsArg length: ${cumulativeCostRowsArg.length}`); 
-            console.log(`CHECK invoiceTermRowsArg length: ${invoiceTermRowsArg.length}`); // Log invoice term rows length
+            console.log(`CHECK actualCostRowsArg length: ${actualCostRowsArg.length}`); // Log actual cost rows length
+            console.log(`CHECK invoiceTermRowsArg length: ${invoiceTermRowsArg.length}`); 
 
             // Transform the fetched data
             const transformedData = this.transformData(
-                baseRowsArg,         // Pass base phase data
-                cumulativeRowsArg,   // Pass work type data
-                cumulativeCostRowsArg, // Pass cost data
-                invoiceTermRowsArg   // Pass invoice term data
+                baseRowsArg,         
+                cumulativeRowsArg,   
+                actualCostRowsArg, // Pass actual cost data
+                invoiceTermRowsArg   
             );
 
             return transformedData;
@@ -59,20 +59,20 @@ class ProjectService {
         }
     }
 
-    transformData(baseRows, cumulativeWorkTypeRows, cumulativeCostRows, invoiceTermRows) { // Added invoiceTermRows
+    transformData(baseRows, cumulativeWorkTypeRows, actualCostRows, invoiceTermRows) { // Changed cumulativeCostRows to actualCostRows
         console.log('Starting data transformation...');
         
         // Ensure we're working with arrays
         const baseRowsArray = Array.isArray(baseRows) ? baseRows : (baseRows?.rows || []);
         const workTypeRowsArray = Array.isArray(cumulativeWorkTypeRows) ? cumulativeWorkTypeRows : (cumulativeWorkTypeRows?.rows || []);
-        const costRowsArray = Array.isArray(cumulativeCostRows) ? cumulativeCostRows : (cumulativeCostRows?.rows || []);
-        const invoiceTermRowsArray = Array.isArray(invoiceTermRows) ? invoiceTermRows : (invoiceTermRows?.rows || []); // Ensure invoice terms is array
+        const actualCostRowsArray = Array.isArray(actualCostRows) ? actualCostRows : (actualCostRows?.rows || []); // Ensure actual costs is array
+        const invoiceTermRowsArray = Array.isArray(invoiceTermRows) ? invoiceTermRows : (invoiceTermRows?.rows || []); 
 
         console.log('Processed arrays lengths:', {
             base: baseRowsArray.length,
             workTypes: workTypeRowsArray.length,
-            costs: costRowsArray.length,
-            invoiceTerms: invoiceTermRowsArray.length // Log length
+            costs: actualCostRowsArray.length, // Changed log key
+            invoiceTerms: invoiceTermRowsArray.length 
         });
 
         // Create a map of projects for efficient lookup
@@ -147,34 +147,29 @@ class ProjectService {
             }
         });
         
-        // NEW: Process cumulative cost data (Uncommented and adjusted)
-        console.log('Processing Cumulative Cost rows...', costRowsArray);
-        console.log(`Number of Cumulative Cost Rows: ${costRowsArray.length}`);
-        costRowsArray.forEach(row => {
-            let projectCode = row.Projectnummer; 
-            if (!projectCode) {
-                console.warn(`Cumulative Cost Row - Skipping due to missing Projectnummer field`);
+        // Process actual cost data to update phase actual costs
+        console.log('Processing Actual Cost rows...', actualCostRowsArray);
+        actualCostRowsArray.forEach(row => {
+            const projectCode = row.Projectnummer; 
+            const phaseCode = row.Projectfase; // Assuming Projectfase exists here too
+            const costAmount = parseFloat(row.Kostprijsbedrag) || 0; // Use Kostprijsbedrag
+
+            if (!projectCode || !phaseCode) {
+                console.warn(`Actual Cost Row - Skipping due to missing Projectnummer or Projectfase`, row);
                 return;
             }
+            
+            if (costAmount === 0) return; // Skip zero amounts
+
             const lookupKey = String(projectCode).trim(); 
             const project = projectMap.get(lookupKey);
 
-            console.log(`Processing cost row for project: ${projectCode}, Found in map? ${project ? 'Yes' : 'No'}`);
-
-            if (project) {
-                 // Ensure array exists (redundant due to initialization, but safe)
-                if (!project.cumulativeCosts) project.cumulativeCosts = []; 
-                
-                const costItem = {
-                    itemCode: row.KOSTENSOORT || 'N/A',
-                    itemDescription: row.Omschrijving_kostensoort || 'Geen omschrijving',
-                    budgetCosts: parseFloat(row.Budget_kosten) || 0,      // Assuming field name is Budget_kosten
-                    actualCosts: parseFloat(row.Nacalculatie_kosten) || 0 // Assuming field name is Nacalculatie_kosten
-                };
-                console.log('Adding cumulative cost item:', costItem);
-                project.cumulativeCosts.push(costItem);
+            if (project && project.phases.has(phaseCode)) {
+                const phase = project.phases.get(phaseCode);
+                // console.log(`Adding actual cost ${costAmount} to Project ${projectCode}, Phase ${phaseCode}. Current: ${phase.actualCosts}`);
+                phase.actualCosts += costAmount; // Add cost to phase total
             } else {
-                 console.warn(`Cumulative cost row found for project ${projectCode} not in base structure:`, row);
+                 console.warn(`Actual cost row found for project ${projectCode}, phase ${phaseCode} not in base structure or phase map:`, row);
             }
         });
 
