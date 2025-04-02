@@ -614,6 +614,29 @@ class App {
             this.renderSingleProject(this.projects[0]); 
         }
     }
+
+    // Fetch project data for the sidebar
+    async fetchSidebarProjects() {
+        // console.log('Fetching sidebar projects using connector: Profit_Address'); // TEMPORARY TEST
+        const connector = 'Cursor_Voortgang_Projecten_per_projectleider'; // Original connector
+        // const connector = 'Profit_Address'; // TEMPORARY TEST CONNECTOR
+        console.log(`Fetching sidebar projects using connector: ${connector}`); // Log the actual connector
+        try {
+            // Assuming skip=0, take=50 for sidebar is reasonable, add sorting
+            // Note: We rely on the proxy to add default skip/take/orderby now
+            const data = await this.afasApi._fetchData(connector, { 
+                // Parameters like skip/take/orderby are handled by the proxy
+                // We might need specific filters here later?
+            }); 
+            this.projects = data.rows; 
+            console.log('Successfully fetched sidebar projects:', this.projects.length);
+            this.renderSidebar();
+        } catch (error) {
+            console.error('Failed to fetch sidebar projects:', error);
+            // Optionally display an error message in the UI
+            document.getElementById('sidebar-content').innerHTML = '<p class="text-red-500">Error loading projects.</p>';
+        }
+    }
 }
 
 // Initialize the application
