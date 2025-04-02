@@ -34,6 +34,9 @@ exports.handler = async (event, context) => {
         // Construct the AFAS API URL
         const params = new URLSearchParams();
         
+        // Ensure baseUri doesn't end with a slash
+        const cleanBaseUri = baseUri.replace(/\/$/, '');
+        
         // Add connector as part of URL path, not as parameter
         const connectorPath = connector.replace(/^\//, '').replace(/\/$/, '');
         
@@ -48,11 +51,8 @@ exports.handler = async (event, context) => {
             }
         }
 
-        // Ensure baseUri doesn't end with a slash
-        const cleanBaseUri = baseUri.replace(/\/$/, '');
-        
-        // Construct final URL with ProfitRestServices path
-        const targetUrl = `${cleanBaseUri}/ProfitRestServices/connectors/${connectorPath}${params.toString() ? '?' + params.toString() : ''}`;
+        // Construct final URL - the baseUri should already include /ProfitRestServices
+        const targetUrl = `${cleanBaseUri}/connectors/${connectorPath}${params.toString() ? '?' + params.toString() : ''}`;
 
         console.log('AFAS API Request Details:', {
             baseUri: cleanBaseUri,
