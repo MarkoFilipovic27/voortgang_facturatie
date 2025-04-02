@@ -11,12 +11,13 @@ class AfasApi {
     netlifyProxyEndpoint = '/.netlify/functions/afas-proxy';
 
     async _fetchData(connector, options = {}) {
-        // Set default take value to 1000 if not specified
-        const take = options.take || 1000;
-        
         const params = new URLSearchParams();
         params.append('connector', connector);
-        params.append('take', take.toString());
+        
+        // Only add take parameter if explicitly provided
+        if (options.take !== undefined) {
+            params.append('take', options.take.toString());
+        }
 
         if (options.skip) params.append('skip', options.skip);
         if (options.filterfieldids) params.append('filterfieldids', options.filterfieldids);
@@ -166,7 +167,7 @@ class AfasApi {
     async fetchProjectsForSidebar() {
         const connector = 'Cursor_Voortgang_Projecten_per_Projectleider';
         console.log(`Fetching sidebar projects using connector: ${connector}`);
-        return this._fetchData(connector);
+        return this._fetchData(connector, { take: undefined });
     }
 
     async createDirectInvoice(projectCode, phaseCode, amount) {
