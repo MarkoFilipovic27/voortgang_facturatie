@@ -13,42 +13,42 @@ class ProjectService {
         }
         try {
             // Fetch all data in parallel: base phases, cumulative work types, cumulative costs, and invoice terms
-            const [baseData, cumulativeWorkTypeData, cumulativeCostData, invoiceTermData] = await Promise.all([
+            const [baseData, cumulativeWorkTypeData, cumulativeCostData, invoiceTermData, actualCostData] = await Promise.all([
                 this.afasApi.fetchBaseProjectAndPhases(projectCode), 
                 this.afasApi.fetchCumulativeWorkTypeData(projectCode), // Gets cumulative work types for bars
                 this.afasApi.fetchCumulativeCostData(projectCode),   // Gets cumulative costs for bars
-                this.afasApi.fetchInvoiceTerms(projectCode) 
-                // Removed: this.afasApi.fetchProjectCumulativeWorkTypes(projectCode) 
+                this.afasApi.fetchInvoiceTerms(projectCode),
+                this.afasApi.fetchActualCosts(projectCode) // Fetch actual costs for phase totals
             ]);
 
             // Log raw data
             console.log('Raw Base Project/Phases:', baseData);
-            console.log('Raw Cumulative Work Types:', cumulativeWorkTypeData); // Renamed log back
-            console.log('Raw Cumulative Costs:', cumulativeCostData); // Renamed log back
+            console.log('Raw Cumulative Work Types:', cumulativeWorkTypeData); 
+            console.log('Raw Cumulative Costs:', cumulativeCostData); 
             console.log('Raw Invoice Terms:', invoiceTermData); 
-            // Removed log for projCumulativeWorkTypeData
+            console.log('Raw Actual Costs:', actualCostData);
 
             // Extract the rows array if the data is in {rows: [...]} format
             const baseRowsArg = (baseData && baseData.rows) ? baseData.rows : (Array.isArray(baseData) ? baseData : []); 
-            const cumulativeWorkTypeRowsArg = (cumulativeWorkTypeData && cumulativeWorkTypeData.rows) ? cumulativeWorkTypeData.rows : (Array.isArray(cumulativeWorkTypeData) ? cumulativeWorkTypeData : []); // Renamed variable back
-            const cumulativeCostRowsArg = (cumulativeCostData && cumulativeCostData.rows) ? cumulativeCostData.rows : (Array.isArray(cumulativeCostData) ? cumulativeCostData : []); // Renamed variable back
+            const cumulativeWorkTypeRowsArg = (cumulativeWorkTypeData && cumulativeWorkTypeData.rows) ? cumulativeWorkTypeData.rows : (Array.isArray(cumulativeWorkTypeData) ? cumulativeWorkTypeData : []); 
+            const cumulativeCostRowsArg = (cumulativeCostData && cumulativeCostData.rows) ? cumulativeCostData.rows : (Array.isArray(cumulativeCostData) ? cumulativeCostData : []); 
             const invoiceTermRowsArg = (invoiceTermData && invoiceTermData.rows) ? invoiceTermData.rows : (Array.isArray(invoiceTermData) ? invoiceTermData : []); 
-            // Removed projCumulativeWorkTypeRowsArg
+            const actualCostRowsArg = (actualCostData && actualCostData.rows) ? actualCostData.rows : (Array.isArray(actualCostData) ? actualCostData : []);
 
             // Check lengths before transforming
             console.log(`CHECK baseRowsArg length: ${baseRowsArg.length}`);
-            console.log(`CHECK cumulativeWorkTypeRowsArg length: ${cumulativeWorkTypeRowsArg.length}`); // Renamed variable back
-            console.log(`CHECK cumulativeCostRowsArg length: ${cumulativeCostRowsArg.length}`); // Renamed variable back
+            console.log(`CHECK cumulativeWorkTypeRowsArg length: ${cumulativeWorkTypeRowsArg.length}`); 
+            console.log(`CHECK cumulativeCostRowsArg length: ${cumulativeCostRowsArg.length}`); 
             console.log(`CHECK invoiceTermRowsArg length: ${invoiceTermRowsArg.length}`); 
-            // Removed log for projCumulativeWorkTypeRowsArg length
+            console.log(`CHECK actualCostRowsArg length: ${actualCostRowsArg.length}`);
 
             // Transform the fetched data
             const transformedData = this.transformData(
                 baseRowsArg,         
-                cumulativeWorkTypeRowsArg,   // Renamed variable back
-                cumulativeCostRowsArg, // Renamed variable back
-                invoiceTermRowsArg   
-                // Removed projCumulativeWorkTypeRowsArg
+                cumulativeWorkTypeRowsArg,   
+                cumulativeCostRowsArg, 
+                invoiceTermRowsArg,
+                actualCostRowsArg
             );
 
             return transformedData;
@@ -58,22 +58,22 @@ class ProjectService {
         }
     }
 
-    transformData(baseRows, cumulativeWorkTypeRows, cumulativeCostRows, invoiceTermRows) { // Reverted parameters
+    transformData(baseRows, cumulativeWorkTypeRows, cumulativeCostRows, invoiceTermRows, actualCostRows) { 
         console.log('Starting data transformation...');
         
         // Ensure we're working with arrays
         const baseRowsArray = Array.isArray(baseRows) ? baseRows : (baseRows?.rows || []);
-        const cumulativeWorkTypeRowsArray = Array.isArray(cumulativeWorkTypeRows) ? cumulativeWorkTypeRows : (cumulativeWorkTypeRows?.rows || []); // Renamed variable back
-        const cumulativeCostRowsArray = Array.isArray(cumulativeCostRows) ? cumulativeCostRows : (cumulativeCostRows?.rows || []); // Renamed variable back
+        const cumulativeWorkTypeRowsArray = Array.isArray(cumulativeWorkTypeRows) ? cumulativeWorkTypeRows : (cumulativeWorkTypeRows?.rows || []); 
+        const cumulativeCostRowsArray = Array.isArray(cumulativeCostRows) ? cumulativeCostRows : (cumulativeCostRows?.rows || []); 
         const invoiceTermRowsArray = Array.isArray(invoiceTermRows) ? invoiceTermRows : (invoiceTermRows?.rows || []); 
-        // Removed projCumulativeWorkTypeRowsArray
+        const actualCostRowsArray = Array.isArray(actualCostRows) ? actualCostRows : (actualCostRows?.rows || []);
 
         console.log('Processed arrays lengths:', {
             base: baseRowsArray.length,
-            cumulativeWorkTypes: cumulativeWorkTypeRowsArray.length, // Renamed key back
-            cumulativeCosts: cumulativeCostRowsArray.length, // Renamed key back
-            invoiceTerms: invoiceTermRowsArray.length 
-            // Removed projCumulativeWorkTypes key
+            cumulativeWorkTypes: cumulativeWorkTypeRowsArray.length, 
+            cumulativeCosts: cumulativeCostRowsArray.length, 
+            invoiceTerms: invoiceTermRowsArray.length,
+            actualCosts: actualCostRowsArray.length
         });
 
         // Create a map of projects for efficient lookup
