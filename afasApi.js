@@ -50,7 +50,7 @@ class AfasApi {
     }
 
     async fetchCumulativeWorkTypeData(projectCode = null) {
-        const connector = 'Cursor_Voortgang_Nacalculatie_Werksoorten';
+        const connector = 'Cursor_Voortgang_Projecten_Cumulatieven_Werksoort';
         const options = {};
         if (projectCode) {
             console.log(`Fetching cumulative work type data for project ${projectCode}`);

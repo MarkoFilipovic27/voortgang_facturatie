@@ -141,17 +141,24 @@ class ProjectService {
                 // Debugging om de exacte veldnamen te zien
                 console.log('Raw work type row:', row);
                 
+                // Checken op alle mogelijke veldnamen voor meer flexibiliteit
+                const budgetHours = parseFloat(row.Aantal_uren_voorcalculatie || row.Budget_uren || 0);
+                const actualHours = parseFloat(row.Aantal_uren_nacalculatie || row.Nacalculatie_uren || 0);
+                const budgetCosts = parseFloat(row.Totaal_kostprijs_voorcalculatie || row.Budget_kosten || 0);
+                const actualCosts = parseFloat(row.Totaal_kostprijs_nacalculatie || row.Nacalculatie_kosten || 0);
+                
                 project.cumulativeWorkTypes.push({
-                    itemCode: row.Itemcode, 
-                    itemDescription: row.Item_omschrijving, 
-                    budgetHours: parseFloat(row.Aantal_uren_voorcalculatie) || 0, 
-                    actualHours: parseFloat(row.Aantal_uren_nacalculatie) || 0,
-                    budgetCosts: parseFloat(row.Totaal_kostprijs_voorcalculatie) || 0, 
-                    actualCosts: parseFloat(row.Totaal_kostprijs_nacalculatie) || 0,
-                    // Extra debug info om veldnamen te controleren
-                    _debug_budgetHours: row.Aantal_uren_voorcalculatie,
-                    _debug_actualHours: row.Aantal_uren_nacalculatie
+                    itemCode: row.Itemcode || row.WERKSOORT || row.Code || 'N/A', 
+                    itemDescription: row.Item_omschrijving || row.Omschrijving || row.Omschrijving_werksoort || 'Geen omschrijving', 
+                    budgetHours: budgetHours, 
+                    actualHours: actualHours,
+                    budgetCosts: budgetCosts, 
+                    actualCosts: actualCosts,
+                    // Debug info
+                    _rawRow: { ...row }
                 });
+                
+                console.log(`Added work type to bars: Code=${row.Itemcode || row.WERKSOORT || 'N/A'}, Budget hours=${budgetHours}, Actual hours=${actualHours}`);
             } else {
                 console.warn(`Cumulative work type row found for project ${projectCode} not in base structure:`, row);
             }
@@ -187,10 +194,16 @@ class ProjectService {
         
         // Process actual cost data to update phase actual costs (KEEP THIS PART for the main table)
         console.log('Processing Actual Cost rows (for phase totals)...', actualCostRowsArray); // Log message adjusted
+        
+        // Map om de werksoorten per fase bij te houden
+        const workTypesByPhase = new Map();
+        
         actualCostRowsArray.forEach(row => {
             const projectCode = row.Projectnummer; 
             const phaseCode = row.Projectfase; // Assuming Projectfase exists here too
             const costAmount = parseFloat(row.Kostprijsbedrag) || 0; // Use Kostprijsbedrag
+            // Controleer of het een werksoort-kostensoort is (dit zijn meestal kostensoorten die beginnen met 3xx)
+            const isWorkType = String(row.KOSTENSOORT || '').startsWith('3');
 
             if (!projectCode || !phaseCode) {
                 console.warn(`Actual Cost Row - Skipping due to missing Projectnummer or Projectfase`, row);
@@ -206,10 +219,25 @@ class ProjectService {
                 const phase = project.phases.get(phaseCode);
                 // console.log(`Adding actual cost ${costAmount} to Project ${projectCode}, Phase ${phaseCode}. Current: ${phase.actualCosts}`);
                 phase.actualCosts += costAmount; // Add cost to phase total
+                
+                // Als het een werksoort betreft, voeg toe aan actualWorkTypes
+                if (isWorkType) {
+                    // Bijhouden in de map voor debug
+                    const key = `${projectCode}-${phaseCode}`;
+                    const currentWorkTypeAmount = workTypesByPhase.get(key) || 0;
+                    workTypesByPhase.set(key, currentWorkTypeAmount + costAmount);
+                    
+                    // Update de fase
+                    phase.actualWorkTypes += costAmount;
+                    console.log(`Adding work type cost ${costAmount} to Project ${projectCode}, Phase ${phaseCode}. Current workTypes: ${phase.actualWorkTypes}`);
+                }
             } else {
                  console.warn(`Actual cost row found for project ${projectCode}, phase ${phaseCode} not in base structure or phase map:`, row);
             }
         });
+        
+        // Debug info over de werksoort totalen per fase
+        console.log('Work types by phase:', Object.fromEntries(workTypesByPhase));
 
         // NEW: Process Invoice Term data to update contract sums
         console.log('Processing Invoice Term rows...', invoiceTermRowsArray);
