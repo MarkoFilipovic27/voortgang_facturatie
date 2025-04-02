@@ -57,7 +57,7 @@ exports.handler = async (event, context) => {
         // Add other parameters
         params.append('skip', skip || '0'); // Default to 0 if not provided
         params.append('take', take || '100'); // Default to 100 if not provided
-        params.append('orderbyfieldids', 'Projectnummer'); // Add sorting as it's required with skip/take
+        // params.append('orderbyfieldids', 'Projectnummer'); // TEMPORARILY REMOVED for testing another connector
         
         if (filterfieldids && filtervalues) {
             params.append('filterfieldids', filterfieldids);

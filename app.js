@@ -615,26 +615,21 @@ class App {
         }
     }
 
-    // Fetch project data for the sidebar
+    // Fetch project data for the sidebar - TEMPORARILY USING DIFFERENT CONNECTOR FOR TEST
     async fetchSidebarProjects() {
-        // console.log('Fetching sidebar projects using connector: Profit_Address'); // TEMPORARY TEST
-        const connector = 'Cursor_Voortgang_Projecten_per_projectleider'; // Original connector
-        // const connector = 'Profit_Address'; // TEMPORARY TEST CONNECTOR
-        console.log(`Fetching sidebar projects using connector: ${connector}`); // Log the actual connector
+        // const originalConnector = 'Cursor_Voortgang_Projecten_per_projectleider';
+        const testConnector = 'Cursor_Voortgang_Factuurtermijnen'; // Connector to test
+        console.log(`TESTING sidebar fetch with connector: ${testConnector}`); 
         try {
-            // Assuming skip=0, take=50 for sidebar is reasonable, add sorting
-            // Note: We rely on the proxy to add default skip/take/orderby now
-            const data = await this.afasApi._fetchData(connector, { 
-                // Parameters like skip/take/orderby are handled by the proxy
-                // We might need specific filters here later?
-            }); 
-            this.projects = data.rows; 
-            console.log('Successfully fetched sidebar projects:', this.projects.length);
-            this.renderSidebar();
+            // Call _fetchData without specific parameters for this test
+            const data = await this.afasApi._fetchData(testConnector, {}); 
+            console.log(`SUCCESSFULLY fetched TEST connector ${testConnector}:`, data); // Log entire data object
+            // this.projects = data.rows; // Don't try to process rows for this test
+            // this.renderSidebar(); // Don't render sidebar for this test
+            document.getElementById('sidebar-content').innerHTML = `<p class="text-green-500">Test connector ${testConnector} fetched successfully! Check console.</p>`;
         } catch (error) {
-            console.error('Failed to fetch sidebar projects:', error);
-            // Optionally display an error message in the UI
-            document.getElementById('sidebar-content').innerHTML = '<p class="text-red-500">Error loading projects.</p>';
+            console.error(`FAILED to fetch TEST connector ${testConnector}:`, error);
+            document.getElementById('sidebar-content').innerHTML = `<p class="text-red-500">Error loading test connector ${testConnector}. Check console.</p>`;
         }
     }
 }
