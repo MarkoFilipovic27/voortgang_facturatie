@@ -80,9 +80,7 @@ exports.handler = async (event, context) => {
             parameters: Object.fromEntries(params.entries()),
             finalUrl: targetUrl.replace(/token/gi, '[hidden]'),
             headers: {
-                'Authorization': 'AfasToken [hidden]',
-                'Accept': 'application/json, application/xml',
-                'Accept-Language': 'nl-nl'
+                'Authorization': 'AfasToken [hidden]'
             }
         });
 
@@ -90,9 +88,7 @@ exports.handler = async (event, context) => {
         const response = await fetch(targetUrl, {
             method: 'GET',
             headers: {
-                'Authorization': `AfasToken ${afasToken}`,
-                'Accept': 'application/json, application/xml',
-                'Accept-Language': 'nl-nl'
+                'Authorization': `AfasToken ${afasToken}`
             },
         });
 
