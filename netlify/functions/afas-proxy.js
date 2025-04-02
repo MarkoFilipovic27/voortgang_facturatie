@@ -3,28 +3,35 @@ const fetch = require('node-fetch'); // Use node-fetch for Node.js environments
 exports.handler = async (event, context) => {
     // 1. Get parameters from the query string
     const { connector, filterfieldids, filtervalues, skip, take } = event.queryStringParameters;
-    const afasToken = process.env.AFAS_TOKEN; // Read token from Netlify environment variables
-    const afasEnv = process.env.AFAS_ENVIRONMENT_NUMBER; // e.g., 31219
+    const afasToken = process.env.AFAS_TOKEN;
+    const baseUri = process.env.AFAS_BASE_URL;
 
     // Basic validation
-    if (!afasToken || !afasEnv) {
+    if (!afasToken || !baseUri) {
         return {
             statusCode: 500,
-            body: JSON.stringify({ error: 'Server configuration error: Missing AFAS Token or Environment Number.' }),
-            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ error: 'Server configuration error: Missing AFAS Token or Base URL.' }),
+            headers: { 
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+            },
         };
     }
     if (!connector) {
         return {
             statusCode: 400,
             body: JSON.stringify({ error: 'Missing required parameter: connector' }),
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+            },
         };
     }
 
     // 2. Construct the AFAS API URL
-    const baseUri = `https://${afasEnv}.restaccept.afas.online/ProfitRestServices/connectors/`;
-    let targetUrl = `${baseUri}${connector}`;
+    let targetUrl = `${baseUri}/${connector}`;
 
     const params = new URLSearchParams();
     if (skip) params.append('skip', skip);
@@ -51,21 +58,45 @@ exports.handler = async (event, context) => {
             },
         });
 
+        // Log the response status and headers for debugging
+        console.log('Response status:', response.status);
+        console.log('Response headers:', [...response.headers.entries()]);
+
         // 4. Handle the response from AFAS
-        const data = await response.json();
+        const text = await response.text(); // First get the raw text
+        console.log('Response body:', text); // Log the raw response
+
+        let data;
+        try {
+            data = JSON.parse(text); // Then try to parse it
+        } catch (parseError) {
+            console.error('JSON Parse Error:', parseError);
+            return {
+                statusCode: 500,
+                body: JSON.stringify({ 
+                    error: 'Invalid JSON response from AFAS API', 
+                    details: parseError.message,
+                    responseText: text.substring(0, 1000) // Include first 1000 chars of response for debugging
+                }),
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*',
+                    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+                },
+            };
+        }
 
         if (!response.ok) {
             // Forward AFAS error status and message if possible
             console.error('AFAS API Error:', response.status, data);
             return {
-                statusCode: response.status, // Forward the status code from AFAS
-                body: JSON.stringify(data), // Forward the error body from AFAS
-                 // Important: Allow requests from your frontend domain
+                statusCode: response.status,
+                body: JSON.stringify(data),
                 headers: { 
                     'Content-Type': 'application/json',
-                    'Access-Control-Allow-Origin': '*', // Or specify your frontend domain for better security
+                    'Access-Control-Allow-Origin': '*',
                     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-                 }, 
+                },
             };
         }
 
@@ -73,12 +104,11 @@ exports.handler = async (event, context) => {
         return {
             statusCode: 200,
             body: JSON.stringify(data),
-             // Important: Allow requests from your frontend domain
             headers: { 
                 'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*', // Or specify your frontend domain for better security
+                'Access-Control-Allow-Origin': '*',
                 'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-             },
+            },
         };
 
     } catch (error) {
@@ -86,12 +116,11 @@ exports.handler = async (event, context) => {
         return {
             statusCode: 500,
             body: JSON.stringify({ error: 'Internal Server Error in proxy function.', details: error.message }),
-             // Important: Allow requests from your frontend domain
             headers: { 
                 'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*', // Or specify your frontend domain for better security
+                'Access-Control-Allow-Origin': '*',
                 'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-             },
+            },
         };
     }
 }; 
