@@ -165,7 +165,7 @@ class AfasApi {
     }
 
     async fetchProjectsForSidebar() {
-        const connector = 'GetCursor_Voortgang_Projecten_per_Projectleider';
+        const connector = 'Cursor_Voortgang_Projecten_per_projectleider';
         console.log(`Fetching sidebar projects using connector: ${connector}`);
         return this._fetchData(connector, { take: undefined });
     }
