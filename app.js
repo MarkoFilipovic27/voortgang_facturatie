@@ -273,8 +273,11 @@ class App {
                                 </button>
                             </div>
                         </div>
-                        <div class="space-y-4">
-                            ${this.renderCumulativeBars(project.cumulativeWorkTypes, this.cumulativeViewMode === 'uren')}
+                        <div class="p-4 space-y-4">
+                            <!-- Existing cumulative bars are replaced by the new table -->
+                            <div id="detailed-work-types-table">
+                                ${this.renderDetailedWorkTypesTable(project.cumulativeWorkTypes)}
+                            </div>
                         </div>
                     </div>
                     ` : ''}
@@ -305,7 +308,72 @@ class App {
         `;
     }
 
-    // NEW Helper to render cumulative bars
+    // NEW Helper to render the detailed work types table
+    renderDetailedWorkTypesTable(detailedWorkTypes) {
+        if (!detailedWorkTypes || detailedWorkTypes.length === 0) {
+            return '<p class="text-sm text-slate-500">Geen cumulatieve werksoort data beschikbaar.</p>';
+        }
+
+        // Calculate totals
+        const totalBudgetHours = detailedWorkTypes.reduce((sum, item) => sum + item.budgetHours, 0);
+        const totalActualHours = detailedWorkTypes.reduce((sum, item) => sum + item.actualHours, 0);
+        const totalDiffHours = detailedWorkTypes.reduce((sum, item) => sum + item.diffHours, 0);
+        const totalBudgetCosts = detailedWorkTypes.reduce((sum, item) => sum + item.budgetCosts, 0);
+        const totalActualCosts = detailedWorkTypes.reduce((sum, item) => sum + item.actualCosts, 0);
+        const totalDiffCosts = detailedWorkTypes.reduce((sum, item) => sum + item.diffCosts, 0);
+
+        let tableHtml = `
+            <table class="min-w-full divide-y divide-slate-200">
+                <thead class="bg-slate-50">
+                    <tr>
+                        <th scope="col" class="px-3 py-2 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Werksoort</th>
+                        <th scope="col" class="px-3 py-2 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Budget Uren</th>
+                        <th scope="col" class="px-3 py-2 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Nacalculatie Uren</th>
+                        <th scope="col" class="px-3 py-2 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Verschil Uren</th>
+                        <th scope="col" class="px-3 py-2 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Budget Kosten</th>
+                        <th scope="col" class="px-3 py-2 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Nacalculatie Kosten</th>
+                        <th scope="col" class="px-3 py-2 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Verschil Kosten</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-slate-200">
+        `;
+
+        detailedWorkTypes.forEach(item => {
+            tableHtml += `
+                <tr class="hover:bg-slate-50">
+                    <td class="px-3 py-2 whitespace-nowrap text-sm text-slate-700" title="${item.itemCode} - ${item.itemDescription}">${item.itemDescription || 'Geen Omschr.'} (${item.itemCode})</td>
+                    <td class="px-3 py-2 whitespace-nowrap text-sm text-slate-500 text-right">${item.budgetHours.toLocaleString()}</td>
+                    <td class="px-3 py-2 whitespace-nowrap text-sm text-slate-500 text-right">${item.actualHours.toLocaleString()}</td>
+                    <td class="px-3 py-2 whitespace-nowrap text-sm ${item.diffHours < 0 ? 'text-red-600' : 'text-slate-500'} text-right">${item.diffHours.toLocaleString()}</td>
+                    <td class="px-3 py-2 whitespace-nowrap text-sm text-slate-500 text-right">€ ${item.budgetCosts.toLocaleString()}</td>
+                    <td class="px-3 py-2 whitespace-nowrap text-sm text-slate-500 text-right">€ ${item.actualCosts.toLocaleString()}</td>
+                    <td class="px-3 py-2 whitespace-nowrap text-sm ${item.diffCosts < 0 ? 'text-red-600' : 'text-slate-500'} text-right">€ ${item.diffCosts.toLocaleString()}</td>
+                </tr>
+            `;
+        });
+
+        // Add Totals Row
+        tableHtml += `
+            <tr class="bg-slate-50 font-semibold">
+                <td class="px-3 py-2 text-left text-sm text-slate-700">TOTAAL</td>
+                <td class="px-3 py-2 text-right text-sm text-slate-700">${totalBudgetHours.toLocaleString()}</td>
+                <td class="px-3 py-2 text-right text-sm text-slate-700">${totalActualHours.toLocaleString()}</td>
+                <td class="px-3 py-2 text-right text-sm ${totalDiffHours < 0 ? 'text-red-600' : 'text-slate-700'}">${totalDiffHours.toLocaleString()}</td>
+                <td class="px-3 py-2 text-right text-sm text-slate-700">€ ${totalBudgetCosts.toLocaleString()}</td>
+                <td class="px-3 py-2 text-right text-sm text-slate-700">€ ${totalActualCosts.toLocaleString()}</td>
+                <td class="px-3 py-2 text-right text-sm ${totalDiffCosts < 0 ? 'text-red-600' : 'text-slate-700'}">€ ${totalDiffCosts.toLocaleString()}</td>
+            </tr>
+        `;
+
+        tableHtml += `
+                </tbody>
+            </table>
+        `;
+
+        return tableHtml;
+    }
+
+    // OLD Helper to render cumulative bars (Keep for reference or future use if needed)
     renderCumulativeBars(cumulativeData, isUren) {
         if (!cumulativeData || cumulativeData.length === 0) {
             return '<p class="text-sm text-slate-500">Geen nacalculatie werksoorten data beschikbaar.</p>';
