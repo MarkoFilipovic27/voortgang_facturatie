@@ -51,7 +51,7 @@ exports.handler = async (event, context) => {
         const cleanConnector = connector.replace(/^\//, '');
         const targetUrl = `${cleanBaseUri}/${cleanConnector}${params.toString() ? '?' + params.toString() : ''}`;
 
-        console.log('Calling AFAS API:', {
+        console.log('AFAS API Request:', {
             url: targetUrl,
             method: 'GET',
             headers: {
@@ -69,29 +69,27 @@ exports.handler = async (event, context) => {
             },
         });
 
-        // Log response details for debugging
+        // Log response details
         console.log('AFAS API Response:', {
             status: response.status,
             statusText: response.statusText,
             headers: Object.fromEntries(response.headers.entries())
         });
 
-        // 4. Handle the response from AFAS
+        // Get the raw text first
         const text = await response.text();
-        console.log('Response body (first 1000 chars):', text.substring(0, 1000));
+        console.log('Raw response text:', text);
 
-        // Try to parse the response as JSON
-        let data;
-        try {
-            data = JSON.parse(text);
-        } catch (parseError) {
-            console.error('JSON Parse Error:', parseError);
+        // If response is not ok, return detailed error
+        if (!response.ok) {
             return {
-                statusCode: 500,
-                body: JSON.stringify({ 
-                    error: 'Invalid JSON response from AFAS API', 
-                    details: parseError.message,
-                    responseText: text.substring(0, 1000)
+                statusCode: response.status,
+                body: JSON.stringify({
+                    error: 'Error from AFAS API',
+                    details: text,
+                    status: response.status,
+                    statusText: response.statusText,
+                    url: targetUrl.replace(afasToken, '[hidden]') // Log URL but hide token
                 }),
                 headers: { 
                     'Content-Type': 'application/json',
@@ -101,19 +99,27 @@ exports.handler = async (event, context) => {
             };
         }
 
-        // Handle non-200 responses
-        if (!response.ok) {
-            console.error('AFAS API Error:', {
-                status: response.status,
-                data: data
+        // Try to parse the response as JSON
+        let data;
+        try {
+            data = text ? JSON.parse(text) : null;
+            
+            if (!data) {
+                throw new Error('Empty response from AFAS API');
+            }
+        } catch (parseError) {
+            console.error('JSON Parse Error:', {
+                error: parseError.message,
+                rawResponse: text
             });
+            
             return {
-                statusCode: response.status,
-                body: JSON.stringify({
-                    error: 'Error from AFAS API',
-                    details: data,
-                    status: response.status,
-                    statusText: response.statusText
+                statusCode: 500,
+                body: JSON.stringify({ 
+                    error: 'Invalid JSON response from AFAS API', 
+                    details: parseError.message,
+                    rawResponse: text,
+                    url: targetUrl.replace(afasToken, '[hidden]') // Log URL but hide token
                 }),
                 headers: { 
                     'Content-Type': 'application/json',
@@ -135,7 +141,7 @@ exports.handler = async (event, context) => {
         };
 
     } catch (error) {
-        console.error('Error in Netlify function:', error);
+        console.error('Error in proxy function:', error);
         return {
             statusCode: 500,
             body: JSON.stringify({ 
