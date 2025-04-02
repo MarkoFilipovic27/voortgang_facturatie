@@ -21,6 +21,7 @@ class AfasApi {
         if (options.skip) params.append('skip', options.skip);
         if (options.filterfieldids) params.append('filterfieldids', options.filterfieldids);
         if (options.filtervalues) params.append('filtervalues', options.filtervalues);
+        if (options.operatortypes) params.append('operatortypes', options.operatortypes);
 
         const url = `${this.netlifyProxyEndpoint}?${params.toString()}`;
         console.log(`Calling Netlify proxy: ${url}`);
@@ -65,6 +66,7 @@ class AfasApi {
             console.log(`Fetching cumulative work type data for project ${projectCode}`);
             options.filterfieldids = 'Projectnummer';
             options.filtervalues = projectCode;
+            options.operatortypes = '1';
         } else {
             console.log('Fetching all cumulative work type data');
         }
@@ -78,6 +80,7 @@ class AfasApi {
             console.log(`Fetching contract sums and phases for project ${projectCode}`);
             options.filterfieldids = 'Projectnummer';
             options.filtervalues = projectCode;
+            options.operatortypes = '1';
         } else {
             console.log('Fetching all contract sums and phases');
         }
@@ -91,6 +94,7 @@ class AfasApi {
             console.log(`Fetching cumulative cost data for project ${projectCode}`);
             options.filterfieldids = 'Projectnummer';
             options.filtervalues = projectCode;
+            options.operatortypes = '1';
         } else {
             console.log('Fetching all cumulative cost data');
         }
@@ -98,109 +102,65 @@ class AfasApi {
     }
 
     async fetchProjectsAndPhases() {
-        try {
-            const response = await fetch(
-                `${this.proxyUrl}${this.config.baseUrl}/Cursor_Voortgang_Projecten_en_fases`,
-                { 
-                    headers: this.getHeaders(),
-                    mode: 'cors'
-                }
-            );
-            if (!response.ok) throw new Error('Failed to fetch projects and phases');
-            return await response.json();
-        } catch (error) {
-            console.error('Error fetching projects and phases:', error);
-            throw error;
-        }
+        const connector = 'Cursor_Voortgang_Projecten_en_fases';
+        console.log(`Fetching projects and phases using connector: ${connector}`);
+        return this._fetchData(connector);
     }
 
     async fetchBaseProjectAndPhases(projectCode = null) {
-        let endpoint = '/connectors/Cursor_Voortgang_Projecten_en_fases';
+        const connector = 'Cursor_Voortgang_Projecten_en_fases';
+        const options = {};
         if (projectCode) {
-            endpoint += `?filterfieldids=Projectnummer&filtervalues=${encodeURIComponent(projectCode)}&operatortypes=1`;
+            console.log(`Fetching base project/phases for project ${projectCode}`);
+            options.filterfieldids = 'Projectnummer';
+            options.filtervalues = projectCode;
+            options.operatortypes = '1';
+        } else {
+            console.log('Fetching all base project/phases');
         }
-        const url = `${this.proxyUrl}${this.config.baseUrl.replace(/\/connectors\/?$/, '')}${endpoint}`;
-        console.log('Fetching base project/phases from URL:', url);
-        try {
-            const response = await fetch(url, {
-                headers: this.getHeaders(),
-                mode: 'cors'
-            });
-            if (!response.ok) {
-                let errorDetails = `HTTP error! status: ${response.status}`;
-                try {
-                    const errorData = await response.json();
-                    errorDetails += ` - ${errorData.message || JSON.stringify(errorData)}`;
-                } catch (e) { /* Ignore */ }
-                throw new Error(errorDetails);
-            }
-            const data = await response.json();
-            console.log('Raw Base Project/Phases response:', data);
-            return data && data.rows ? data.rows : [];
-        } catch (error) {
-            console.error('Failed to fetch base project/phases:', error);
-            throw error;
-        }
+        return this._fetchData(connector, options);
     }
 
     async fetchActualCosts(projectCode = null) {
-        let endpoint = '/connectors/Cursor_Voortgang_Nacalculatie_Kostensoorten';
+        const connector = 'Cursor_Voortgang_Nacalculatie_Kostensoorten';
+        const options = {};
         if (projectCode) {
-            endpoint += `?filterfieldids=Projectnummer&filtervalues=${encodeURIComponent(projectCode)}&operatortypes=1`;
+            console.log(`Fetching actual costs for project ${projectCode}`);
+            options.filterfieldids = 'Projectnummer';
+            options.filtervalues = projectCode;
+            options.operatortypes = '1';
+        } else {
+            console.log('Fetching all actual costs');
         }
-        const url = `${this.proxyUrl}${this.config.baseUrl.replace(/\/connectors\/?$/, '')}${endpoint}`;
-        console.log('Fetching actual costs from URL:', url);
-        try {
-            const response = await fetch(url, {
-                headers: this.getHeaders(),
-                mode: 'cors'
-            });
-            if (!response.ok) throw new Error('Failed to fetch actual costs');
-            return await response.json();
-        } catch (error) {
-            console.error('Error fetching actual costs:', error);
-            throw error;
-        }
+        return this._fetchData(connector, options);
     }
 
     async fetchActualWorkTypes(projectCode = null) {
-        let endpoint = '/connectors/Cursor_Voortgang_Nacalculatie_Werksoorten';
+        const connector = 'Cursor_Voortgang_Nacalculatie_Werksoorten';
+        const options = {};
         if (projectCode) {
-            endpoint += `?filterfieldids=Projectnummer&filtervalues=${encodeURIComponent(projectCode)}&operatortypes=1`;
+            console.log(`Fetching actual work types for project ${projectCode}`);
+            options.filterfieldids = 'Projectnummer';
+            options.filtervalues = projectCode;
+            options.operatortypes = '1';
+        } else {
+            console.log('Fetching all actual work types');
         }
-        const url = `${this.proxyUrl}${this.config.baseUrl.replace(/\/connectors\/?$/, '')}${endpoint}`;
-        console.log('Fetching actual work types from URL:', url);
-        try {
-            const response = await fetch(url, {
-                headers: this.getHeaders(),
-                mode: 'cors'
-            });
-            if (!response.ok) throw new Error('Failed to fetch actual work types');
-            return await response.json();
-        } catch (error) {
-            console.error('Error fetching actual work types:', error);
-            throw error;
-        }
+        return this._fetchData(connector, options);
     }
 
     async fetchInvoicedAmounts(projectCode = null) {
-        let endpoint = '/connectors/Cursor_Voortgang_Gefactureerd';
+        const connector = 'Cursor_Voortgang_Gefactureerd';
+        const options = {};
         if (projectCode) {
-            endpoint += `?filterfieldids=Projectnummer&filtervalues=${encodeURIComponent(projectCode)}&operatortypes=1`;
+            console.log(`Fetching invoiced amounts for project ${projectCode}`);
+            options.filterfieldids = 'Projectnummer';
+            options.filtervalues = projectCode;
+            options.operatortypes = '1';
+        } else {
+            console.log('Fetching all invoiced amounts');
         }
-        const url = `${this.proxyUrl}${this.config.baseUrl.replace(/\/connectors\/?$/, '')}${endpoint}`;
-        console.log('Fetching invoiced amounts from URL:', url);
-        try {
-            const response = await fetch(url, {
-                headers: this.getHeaders(),
-                mode: 'cors'
-            });
-            if (!response.ok) throw new Error('Failed to fetch invoiced amounts');
-            return await response.json();
-        } catch (error) {
-            console.error('Error fetching invoiced amounts:', error);
-            throw error;
-        }
+        return this._fetchData(connector, options);
     }
 
     async fetchProjectsForSidebar() {
