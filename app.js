@@ -1,3 +1,5 @@
+console.log('--- app.js loaded ---'); // Check if script runs at all
+
 class App {
     constructor() {
         this.afasApi = new AfasApi();
@@ -16,6 +18,7 @@ class App {
     }
 
     async init() {
+        console.log('--- App.init() started ---'); // Check if init runs
         try {
             this.showSidebarLoading();
             this.showMainContentLoading(); // Show loading in main area initially
@@ -33,6 +36,7 @@ class App {
             this.showMainContentError('Kan project niet laden.');
             console.error(error);
         }
+        console.log('--- App.init() finished ---');
     }
 
     // --- Loading and Error States ---
@@ -635,5 +639,8 @@ class App {
 }
 
 // Initialize the application
+console.log('--- Initializing App ---');
 const app = new App();
-app.init(); 
+app.init();
+console.log('--- App initialized globally ---');
+window.app = app; // Make app global for button clicks 
