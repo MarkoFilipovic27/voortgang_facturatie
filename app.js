@@ -578,3 +578,10 @@ class App {
         });
     }
 }
+
+// Initialisatie van de app
+console.log('--- Initializing App ---');
+const app = new App();
+app.init();
+console.log('--- App initialized globally ---');
+window.app = app; // Make app global for button clicks
