@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project voortgang</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+        }
+
+        /* Basisstijl om te voorkomen dat de inhoud springt tijdens het laden */
+        #projects-container.loading-state { /* Changed selector to match container ID */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 300px; 
+        }
+
+        /* Remove default marker */
+        details > summary { list-style: none; } 
+        details > summary::-webkit-details-marker { display: none; } 
+
+        /* Removed card stack and animation CSS */
+
+        .progress-bar-inner {
+            width: var(--progress-width, 0%); /* Set width using the variable, default to 0% */
+            transition: width 0.5s ease-out; /* Add transition for width property */
+        }
+    </style>
+</head>
+<body class="bg-slate-100">
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <aside id="sidebar-container" class="w-64 bg-white p-4 border-r border-slate-200 overflow-y-auto flex flex-col">
+            <!-- Sidebar content wordt hier geladen -->
+            <div class="flex-grow flex justify-center items-center text-slate-500">Sidebar laden...</div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 overflow-y-auto">
+            <div class="container mx-auto px-4 py-8">
+                <div class="flex justify-between items-center mb-6">
+                    <h1 class="text-3xl font-bold text-slate-900">Project voortgang</h1>
+                    <button 
+                        onclick="app.init()"
+                        class="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-md transition duration-150 ease-in-out flex items-center gap-2"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd" />
+                        </svg>
+                        Vernieuwen
+                    </button>
+                </div>
+                
+                <div id="projects-container" class="space-y-6">
+                    <!-- Projects will be loaded here -->
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="afasApi.js"></script>
+    <script src="projectService.js"></script>
+    <script src="app.js"></script>
+</body>
+</html> 

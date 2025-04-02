@@ -1,0 +1,12 @@
+# Dependencies
+node_modules/
+
+# Build artifacts
+# (Add any build output folders here if applicable later)
+
+# Environment variables file (if you were to use one locally)
+# .env
+
+# OS generated files
+.DS_Store
+Thumbs.db 
