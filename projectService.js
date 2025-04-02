@@ -192,14 +192,26 @@ class ProjectService {
             const project = projectMap.get(lookupKey);
 
             if (project) {
-                 // Restore pushing data for bars
+                // Restore pushing data for bars
                 if (!project.cumulativeCosts) project.cumulativeCosts = []; 
+                
+                // Debugging om de exacte veldnamen te zien
+                console.log('Raw cost row:', row);
+                
+                // Checken op alle mogelijke veldnamen voor meer flexibiliteit
+                const budgetCosts = parseFloat(row.Totaal_kostprijs_voorcalculatie || row.Budget_kosten || 0);
+                const actualCosts = parseFloat(row.Totaal_kostprijs_nacalculatie || row.Nacalculatie_kosten || 0);
+                
                 project.cumulativeCosts.push({
-                    itemCode: row.KOSTENSOORT || 'N/A', // Use field from this connector
-                    itemDescription: row.Omschrijving_kostensoort || 'Geen omschrijving', // Use field from this connector
-                    budgetCosts: parseFloat(row.Budget_kosten) || 0,      // Use field from this connector
-                    actualCosts: parseFloat(row.Nacalculatie_kosten) || 0 // Use field from this connector
+                    itemCode: row.Itemcode || row.KOSTENSOORT || row.Code || 'N/A',
+                    itemDescription: row.Item_omschrijving || row.Omschrijving || row.Omschrijving_kostensoort || 'Geen omschrijving',
+                    budgetCosts: budgetCosts,
+                    actualCosts: actualCosts,
+                    // Debug info
+                    _rawRow: { ...row }
                 });
+                
+                console.log(`Added cost to bars: Code=${row.Itemcode || row.KOSTENSOORT || 'N/A'}, Budget=${budgetCosts}, Actual=${actualCosts}`);
             } else {
                  console.warn(`Cumulative cost row found for project ${projectCode} not in base structure:`, row);
             }
