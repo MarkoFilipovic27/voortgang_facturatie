@@ -22,7 +22,7 @@ exports.handler = async function(event, context) {
         });
 
         // Construct the URL with proper path components
-        const baseUrl = 'https://62894.restaccept.afas.online/ProfitRestServices';
+        const baseUrl = 'https://31219.rest.afas.online/ProfitRestServices';
         const connectorPath = 'connectors';
         const url = `${baseUrl}/${connectorPath}/${encodeURIComponent(connector)}`;
 
