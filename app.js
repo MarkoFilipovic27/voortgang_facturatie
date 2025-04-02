@@ -589,14 +589,92 @@ class App {
     }
 
     handleSubmitProgress(projectCode) {
-        return new Promise((resolve) => {
-            // In a real app, this would save to backend
-            console.log(`Submitting progress for project ${projectCode}`);
-            // Simulate API call delay
-            setTimeout(() => {
-                console.log(`Progress submitted for project ${projectCode}`);
-                resolve();
-            }, 500);
+        return new Promise(async (resolve, reject) => {
+            try {
+                console.log(`Submitting progress for project ${projectCode}`);
+                
+                // Vind het huidige project
+                const project = this.projects.find(p => p.projectCode === projectCode);
+                if (!project) {
+                    throw new Error(`Project ${projectCode} niet gevonden`);
+                }
+                
+                let successMessage = "Voortgang bijgewerkt";
+                let errorMessage = null;
+                
+                // Zoek alle fasen met gewijzigde voortgang en een positief te factureren bedrag
+                const phasesToInvoice = project.phases.filter(phase => 
+                    phase.newProgress !== null && 
+                    phase.newProgress !== phase.progress &&
+                    phase.toInvoice > 0
+                );
+                
+                console.log(`Found ${phasesToInvoice.length} phases to invoice`, phasesToInvoice);
+                
+                if (phasesToInvoice.length > 0) {
+                    // Creëer alle facturen parallel
+                    const invoicePromises = phasesToInvoice.map(phase => {
+                        console.log(`Creating invoice for phase ${phase.phaseCode} with amount ${phase.toInvoice}`);
+                        return this.afasApi.createDirectInvoice(
+                            projectCode,
+                            phase.phaseCode,
+                            phase.toInvoice
+                        );
+                    });
+                    
+                    // Wacht op alle factuurcreaties
+                    const invoiceResults = await Promise.all(invoicePromises);
+                    console.log('Invoice results:', invoiceResults);
+                    
+                    // Verwerk de resultaten
+                    const successfulInvoices = invoiceResults.filter(result => result.success);
+                    const failedInvoices = invoiceResults.filter(result => !result.success);
+                    
+                    if (successfulInvoices.length > 0) {
+                        // Haal de factuurnummers op voor de bevestigingsmelding
+                        const invoiceNumbers = successfulInvoices
+                            .map(result => result.invoiceNumber)
+                            .filter(number => number !== null)
+                            .join(', ');
+                        
+                        if (invoiceNumbers) {
+                            successMessage = `Voortgang bijgewerkt en ${successfulInvoices.length} factuur/facturen aangemaakt (${invoiceNumbers})`;
+                        } else {
+                            successMessage = `Voortgang bijgewerkt en ${successfulInvoices.length} factuur/facturen aangemaakt`;
+                        }
+                    }
+                    
+                    if (failedInvoices.length > 0) {
+                        errorMessage = `${failedInvoices.length} factuur/facturen konden niet worden aangemaakt: ${failedInvoices.map(r => r.message).join('; ')}`;
+                    }
+                }
+                
+                // Toon een succesmelding (in een echte applicatie)
+                if (successMessage) {
+                    console.log(`Success: ${successMessage}`);
+                    alert(successMessage);
+                }
+                
+                // Toon evt. foutmelding (in een echte applicatie)
+                if (errorMessage) {
+                    console.error(`Error: ${errorMessage}`);
+                    alert(`Waarschuwing: ${errorMessage}`);
+                }
+                
+                // Update de progress in het project naar de nieuwe waarden (voor UI)
+                for (const phase of project.phases) {
+                    if (phase.newProgress !== null && phase.newProgress !== phase.progress) {
+                        phase.progress = phase.newProgress;
+                        phase.newProgress = null;
+                    }
+                }
+                
+                resolve(successMessage);
+            } catch (error) {
+                console.error('Error in handleSubmitProgress:', error);
+                alert(`Er is een fout opgetreden: ${error.message}`);
+                reject(error);
+            }
         });
     }
 }
