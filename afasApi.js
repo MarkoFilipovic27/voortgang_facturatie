@@ -129,12 +129,12 @@ class AfasApi {
         const connector = 'Cursor_Voortgang_Nacalculatie_Werksoorten';
         const options = {};
         if (projectCode) {
-            console.log(`Fetching actual work types for project ${projectCode}`);
+            console.log(`Fetching actual work types for project ${projectCode} (for table column)`);
             options.filterfieldids = 'Projectnummer';
             options.filtervalues = projectCode;
             options.operatortypes = '1';
         } else {
-            console.log('Fetching all actual work types');
+            console.log('Fetching all actual work types (for table column)');
         }
         return this._fetchData(connector, options);
     }
