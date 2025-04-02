@@ -218,15 +218,17 @@ class AfasApi {
                 }
             };
 
-            const url = `${this.netlifyProxyEndpoint}?connector=FbDirectInvoice`;
-            console.log('Calling FbDirectInvoice endpoint:', url);
+            // Gebruik de UpdateConnector URL structuur via de proxy
+            const url = `${this.netlifyProxyEndpoint}`;
+            console.log('Calling FbDirectInvoice UpdateConnector:', url);
             console.log('Sending data:', JSON.stringify(data, null, 2));
 
             const response = await fetch(url, {
                 method: 'POST',
                 headers: {
                     'Accept': 'application/json',
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'X-AFAS-Update-Connector': 'FbDirectInvoice'  // Specifieke header voor UpdateConnector
                 },
                 body: JSON.stringify(data)
             });
