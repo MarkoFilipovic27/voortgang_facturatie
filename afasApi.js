@@ -159,6 +159,20 @@ class AfasApi {
         return this._fetchData(connector, { take: undefined });
     }
 
+    async fetchInvoiceTerms(projectCode = null) {
+        const connector = 'Cursor_Voortgang_Factuurtermijnen';
+        const options = {};
+        if (projectCode) {
+            console.log(`Fetching invoice terms for project ${projectCode}`);
+            options.filterfieldids = 'Projectnummer';
+            options.filtervalues = projectCode;
+            options.operatortypes = '1';
+        } else {
+            console.log('Fetching all invoice terms');
+        }
+        return this._fetchData(connector, options);
+    }
+
     async createDirectInvoice(projectCode, phaseCode, amount) {
         try {
             const today = new Date().toISOString().split('T')[0];

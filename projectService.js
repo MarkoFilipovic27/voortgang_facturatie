@@ -12,11 +12,12 @@ class ProjectService {
             throw new Error("fetchProjectData requires a projectCode when fetching details.");
         }
         try {
-            // Fetch all data in parallel: base phases, work types, and costs
-            const [baseData, cumulativeWorkTypeData, cumulativeCostData] = await Promise.all([
+            // Fetch all data in parallel: base phases, work types, costs, and invoice terms
+            const [baseData, cumulativeWorkTypeData, cumulativeCostData, invoiceTermData] = await Promise.all([
                 this.afasApi.fetchBaseProjectAndPhases(projectCode), // Correct function for base structure
                 this.afasApi.fetchCumulativeWorkTypeData(projectCode),
-                this.afasApi.fetchCumulativeCostData(projectCode)   // Fetch cost data
+                this.afasApi.fetchCumulativeCostData(projectCode),   // Fetch cost data
+                this.afasApi.fetchInvoiceTerms(projectCode) // Fetch invoice term data (contract sums)
             ]);
 
             // Log raw data
@@ -29,22 +30,26 @@ class ProjectService {
             console.log('Raw Cumulative Costs:', cumulativeCostData);
             console.log('Raw Cumulative Costs type:', typeof cumulativeCostData);
             console.log('Raw Cumulative Costs structure:', cumulativeCostData ? Object.keys(cumulativeCostData) : 'null');
+            console.log('Raw Invoice Terms:', invoiceTermData); // Log raw invoice term data
 
             // Extract the rows array if the data is in {rows: [...]} format
             const baseRowsArg = (baseData && baseData.rows) ? baseData.rows : (Array.isArray(baseData) ? baseData : []); 
             const cumulativeRowsArg = (cumulativeWorkTypeData && cumulativeWorkTypeData.rows) ? cumulativeWorkTypeData.rows : (Array.isArray(cumulativeWorkTypeData) ? cumulativeWorkTypeData : []); 
             const cumulativeCostRowsArg = (cumulativeCostData && cumulativeCostData.rows) ? cumulativeCostData.rows : (Array.isArray(cumulativeCostData) ? cumulativeCostData : []); 
+            const invoiceTermRowsArg = (invoiceTermData && invoiceTermData.rows) ? invoiceTermData.rows : (Array.isArray(invoiceTermData) ? invoiceTermData : []); // Extract invoice term rows
 
             // Check lengths before transforming
             console.log(`CHECK baseRowsArg length: ${baseRowsArg.length}`);
             console.log(`CHECK cumulativeRowsArg length: ${cumulativeRowsArg.length}`);
-            console.log(`CHECK cumulativeCostRowsArg length: ${cumulativeCostRowsArg.length}`); // Log cost data length
+            console.log(`CHECK cumulativeCostRowsArg length: ${cumulativeCostRowsArg.length}`); 
+            console.log(`CHECK invoiceTermRowsArg length: ${invoiceTermRowsArg.length}`); // Log invoice term rows length
 
             // Transform the fetched data
             const transformedData = this.transformData(
                 baseRowsArg,         // Pass base phase data
                 cumulativeRowsArg,   // Pass work type data
-                cumulativeCostRowsArg // Pass cost data
+                cumulativeCostRowsArg, // Pass cost data
+                invoiceTermRowsArg   // Pass invoice term data
             );
 
             return transformedData;
@@ -54,18 +59,20 @@ class ProjectService {
         }
     }
 
-    transformData(baseRows, cumulativeWorkTypeRows, cumulativeCostRows) { // Added cumulativeCostRows
+    transformData(baseRows, cumulativeWorkTypeRows, cumulativeCostRows, invoiceTermRows) { // Added invoiceTermRows
         console.log('Starting data transformation...');
         
         // Ensure we're working with arrays
         const baseRowsArray = Array.isArray(baseRows) ? baseRows : (baseRows?.rows || []);
         const workTypeRowsArray = Array.isArray(cumulativeWorkTypeRows) ? cumulativeWorkTypeRows : (cumulativeWorkTypeRows?.rows || []);
         const costRowsArray = Array.isArray(cumulativeCostRows) ? cumulativeCostRows : (cumulativeCostRows?.rows || []);
+        const invoiceTermRowsArray = Array.isArray(invoiceTermRows) ? invoiceTermRows : (invoiceTermRows?.rows || []); // Ensure invoice terms is array
 
         console.log('Processed arrays lengths:', {
             base: baseRowsArray.length,
             workTypes: workTypeRowsArray.length,
-            costs: costRowsArray.length
+            costs: costRowsArray.length,
+            invoiceTerms: invoiceTermRowsArray.length // Log length
         });
 
         // Create a map of projects for efficient lookup
@@ -99,7 +106,7 @@ class ProjectService {
                 project.phases.set(phaseCode, {
                     phaseCode: phaseCode,
                     phaseDescription: phaseDescription || 'Onbekende Faseomschrijving',
-                    contractSum: 0, // These will be filled by other API calls if needed
+                    contractSum: 0, // Initialize contractSum, will be updated later
                     actualCosts: 0,
                     actualWorkTypes: 0,
                     invoiced: 0,
@@ -168,6 +175,30 @@ class ProjectService {
                 project.cumulativeCosts.push(costItem);
             } else {
                  console.warn(`Cumulative cost row found for project ${projectCode} not in base structure:`, row);
+            }
+        });
+
+        // NEW: Process Invoice Term data to update contract sums
+        console.log('Processing Invoice Term rows...', invoiceTermRowsArray);
+        invoiceTermRowsArray.forEach(row => {
+            const projectCode = row.Projectnummer;
+            const phaseCode = row.Projectfase; 
+            const contractSum = parseFloat(row.Contractsom) || 0; // Assuming field name 'Contractsom'
+
+            if (!projectCode || !phaseCode) {
+                console.warn(`Invoice Term Row - Skipping due to missing Projectnummer or Projectfase`, row);
+                return;
+            }
+
+            const lookupKey = String(projectCode).trim();
+            const project = projectMap.get(lookupKey);
+
+            if (project && project.phases.has(phaseCode)) {
+                const phase = project.phases.get(phaseCode);
+                console.log(`Updating contract sum for Project ${projectCode}, Phase ${phaseCode} from ${phase.contractSum} to ${contractSum}`);
+                phase.contractSum = contractSum; // Update the contract sum
+            } else {
+                console.warn(`Invoice term row found for project ${projectCode}, phase ${phaseCode} not in base structure or phase map:`, row);
             }
         });
 
