@@ -37,6 +37,28 @@ class App {
         console.log('--- App.init() finished ---');
     }
 
+    // Fetch projects for sidebar
+    async fetchSidebarProjects() {
+        try {
+            const sidebarData = await this.afasApi.fetchSidebarProjects();
+            
+            if (!sidebarData || !sidebarData.rows || sidebarData.rows.length === 0) {
+                this.showSidebarError('Geen projecten gevonden.');
+                return;
+            }
+            
+            console.log(`Loaded ${sidebarData.rows.length} projects for sidebar`);
+            this.sidebarData = sidebarData.rows;
+            this.groupedSidebarData = this.groupProjectsByLeader(sidebarData.rows);
+            
+            // Render the sidebar with the retrieved data
+            this.renderSidebar();
+        } catch (error) {
+            console.error('Error fetching sidebar projects:', error);
+            this.showSidebarError('Fout bij het ophalen van projecten.');
+        }
+    }
+
     // --- Loading and Error States ---
     showSidebarLoading() {
         this.sidebarContainer.innerHTML = '<div class="flex-grow flex justify-center items-center text-slate-500">Laden...</div>';
