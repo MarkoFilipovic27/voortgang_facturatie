@@ -47,10 +47,10 @@ exports.handler = async (event, context) => {
         const params = new URLSearchParams();
         
         // Ensure baseUri doesn't end with a slash
-        const cleanBaseUri = baseUri.replace(/\/$/, '');
+        const cleanBaseUri = baseUri.replace(/\/+$/, '');
         
         // Add connector as part of URL path, not as parameter
-        const connectorPath = connector.replace(/^\//, '').replace(/\/$/, '');
+        const connectorPath = connector.replace(/^\/+/, '').replace(/\/+$/, '');
         
         // Add other parameters
         if (skip) params.append('skip', skip);
@@ -63,11 +63,15 @@ exports.handler = async (event, context) => {
             }
         }
 
-        // Construct final URL - baseUri already includes /ProfitRestServices/connectors/
-        const targetUrl = `${cleanBaseUri}/${connectorPath}${params.toString() ? '?' + params.toString() : ''}`;
+        // Remove any duplicate ProfitRestServices/connectors from baseUri
+        const baseUriWithoutDuplicates = cleanBaseUri.replace(/\/ProfitRestServices\/connectors\/?$/, '');
+        
+        // Construct final URL with correct path structure
+        const targetUrl = `${baseUriWithoutDuplicates}/ProfitRestServices/connectors/${connectorPath}${params.toString() ? '?' + params.toString() : ''}`;
 
         console.log('AFAS API Request Details:', {
-            baseUri: cleanBaseUri.replace(/token/gi, '[hidden]'),
+            originalBaseUri: cleanBaseUri,
+            cleanedBaseUri: baseUriWithoutDuplicates,
             connector: connectorPath,
             parameters: Object.fromEntries(params.entries()),
             finalUrl: targetUrl.replace(/token/gi, '[hidden]'),
